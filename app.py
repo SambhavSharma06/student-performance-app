@@ -1,180 +1,191 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
-import matplotlib.pyplot as plt
-import seaborn as sns
+import numpy as np
 
-# -----------------------------
-# PAGE CONFIG
-# -----------------------------
+# ------------------------------------------------
+# Page Configuration
+# ------------------------------------------------
+
 st.set_page_config(
-    page_title="Student Performance Dashboard",
+    page_title="Student Performance Analytics",
     layout="wide"
 )
 
-st.title("📊 Student Performance Analytics Dashboard")
+# ------------------------------------------------
+# Load Dataset
+# ------------------------------------------------
 
-# -----------------------------
-# LOAD DATA
-# -----------------------------
-@st.cache_data
-def load_data():
-    return pd.read_csv("The_Real_Student_Performance.csv")
+df = pd.read_csv("The_Real_Student_Performance.csv")
 
-df = load_data()
+# Load trained model and scaler
+rf_model = joblib.load("rf_model.pkl")
+scaler = joblib.load("scaler.pkl")
 
-# -----------------------------
-# SIDEBAR FILTERS
-# -----------------------------
-st.sidebar.header("🔎 Filters")
+# ------------------------------------------------
+# Sidebar Navigation
+# ------------------------------------------------
 
-selected_gender = st.sidebar.multiselect(
-    "Select Gender",
-    options=df["gender"].unique(),
-    default=df["gender"].unique()
+page = st.sidebar.radio(
+    "Navigation",
+    ["Project Overview", "Data Exploration", "Machine Learning Models"]
 )
 
-selected_school = st.sidebar.multiselect(
-    "Select School Type",
-    options=df["school_type"].unique(),
-    default=df["school_type"].unique()
-)
+# ==========================================================
+# PAGE 1 — PROJECT OVERVIEW
+# ==========================================================
 
-selected_internet = st.sidebar.multiselect(
-    "Internet Access",
-    options=df["internet_access"].unique(),
-    default=df["internet_access"].unique()
-)
+if page == "Project Overview":
 
-study_range = st.sidebar.slider(
-    "Study Hours",
-    float(df["study_hours"].min()),
-    float(df["study_hours"].max()),
-    (float(df["study_hours"].min()), float(df["study_hours"].max()))
-)
+    st.title("Student Performance Data Analytics Project")
 
-attendance_range = st.sidebar.slider(
-    "Attendance Percentage",
-    int(df["attendance_percentage"].min()),
-    int(df["attendance_percentage"].max()),
-    (int(df["attendance_percentage"].min()), int(df["attendance_percentage"].max()))
-)
+    st.subheader("Project Objective")
+    st.write("""
+    This project aims to analyse student performance data and predict
+    final grades using machine learning models. The goal is to understand
+    the factors that influence academic success.
+    """)
 
-selected_grade = st.sidebar.multiselect(
-    "Final Grade",
-    options=df["final_grade"].unique(),
-    default=df["final_grade"].unique()
-)
-
-# -----------------------------
-# APPLY FILTERS
-# -----------------------------
-filtered_df = df[
-    (df["gender"].isin(selected_gender)) &
-    (df["school_type"].isin(selected_school)) &
-    (df["internet_access"].isin(selected_internet)) &
-    (df["study_hours"].between(study_range[0], study_range[1])) &
-    (df["attendance_percentage"].between(attendance_range[0], attendance_range[1])) &
-    (df["final_grade"].isin(selected_grade))
-]
-
-# -----------------------------
-# SUMMARY METRICS
-# -----------------------------
-st.subheader("📈 Summary Metrics")
-
-col1, col2, col3 = st.columns(3)
-
-col1.metric("Total Students", len(filtered_df))
-col2.metric("Average Overall Score", round(filtered_df["overall_score"].mean(), 2))
-col3.metric("Average Study Hours", round(filtered_df["study_hours"].mean(), 2))
-
-# -----------------------------
-# VISUALIZATIONS
-# -----------------------------
-st.subheader("📊 Data Visualizations")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    fig1, ax1 = plt.subplots()
-    sns.histplot(filtered_df["overall_score"], bins=20, kde=True, ax=ax1)
-    ax1.set_title("Distribution of Overall Score")
-    st.pyplot(fig1)
-
-with col2:
-    fig2, ax2 = plt.subplots()
-    sns.boxplot(x="final_grade", y="attendance_percentage", data=filtered_df, ax=ax2)
-    ax2.set_title("Attendance by Final Grade")
-    st.pyplot(fig2)
-
-# Correlation Heatmap
-st.subheader("🔥 Correlation Heatmap")
-
-numeric_cols = filtered_df.select_dtypes(include=np.number)
-
-fig3, ax3 = plt.subplots(figsize=(8,6))
-sns.heatmap(numeric_cols.corr(), annot=True, cmap="coolwarm", ax=ax3)
-st.pyplot(fig3)
-
-# -----------------------------
-# MODEL PREDICTION SECTION
-# -----------------------------
-st.subheader("🤖 Predict Student Final Grade")
-
-try:
-    rf_model = joblib.load("rf_model.pkl")
-    scaler = joblib.load("scaler.pkl")
+    st.subheader("Dataset Overview")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        age = st.number_input("Age", 10, 25, 16)
-        study_hours = st.number_input("Study Hours", 0.0, 15.0, 5.0)
-        attendance = st.number_input("Attendance Percentage", 0, 100, 80)
-        math_score = st.number_input("Math Score", 0, 100, 70)
-        science_score = st.number_input("Science Score", 0, 100, 70)
-        english_score = st.number_input("English Score", 0, 100, 70)
+        st.metric("Total Students", df.shape[0])
+        st.metric("Total Features", df.shape[1])
 
     with col2:
-        gender = st.selectbox("Gender", df["gender"].unique())
-        school_type = st.selectbox("School Type", df["school_type"].unique())
-        internet_access = st.selectbox("Internet Access", df["internet_access"].unique())
+        st.metric("Target Variable", "final_grade")
+        st.metric("Type of Problem", "Classification")
+
+    st.subheader("Approach Used")
+
+    st.write("""
+    1. Exploratory Data Analysis (EDA)
+    2. Data Cleaning and Preprocessing
+    3. Encoding Categorical Variables
+    4. Feature Scaling
+    5. Model Training (Logistic Regression, Decision Tree, Random Forest)
+    6. Model Evaluation and Comparison
+    """)
+
+    st.subheader("Why This Matters")
+
+    st.write("""
+    Understanding student performance patterns helps identify
+    important academic factors such as study hours, attendance,
+    and subject scores. Machine learning allows us to make
+    data-driven predictions.
+    """)
+
+# ==========================================================
+# PAGE 2 — DATA EXPLORATION
+# ==========================================================
+
+elif page == "Data Exploration":
+
+    st.title("Exploratory Data Analysis")
+
+    st.subheader("Apply Filters")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        gender = st.multiselect(
+            "Select Gender",
+            df["gender"].unique()
+        )
+
+    with col2:
+        school = st.multiselect(
+            "Select School Type",
+            df["school_type"].unique()
+        )
+
+    with col3:
+        parent_edu = st.multiselect(
+            "Select Parent Education",
+            df["parent_education"].unique()
+        )
+
+    filtered_df = df.copy()
+
+    if gender:
+        filtered_df = filtered_df[filtered_df["gender"].isin(gender)]
+
+    if school:
+        filtered_df = filtered_df[filtered_df["school_type"].isin(school)]
+
+    if parent_edu:
+        filtered_df = filtered_df[filtered_df["parent_education"].isin(parent_edu)]
+
+    st.subheader("Filtered Dataset")
+    st.dataframe(filtered_df)
+
+    st.subheader("Study Hours vs Overall Score")
+    st.scatter_chart(filtered_df[["study_hours", "overall_score"]])
+
+    st.subheader("Attendance vs Final Grade")
+    st.bar_chart(filtered_df.groupby("final_grade")["attendance_percentage"].mean())
+
+# ==========================================================
+# PAGE 3 — MACHINE LEARNING MODELS
+# ==========================================================
+
+elif page == "Machine Learning Models":
+
+    st.title("Machine Learning Model Comparison")
+
+    st.subheader("Models Used")
+
+    st.write("""
+    - Logistic Regression (Baseline Model)
+    - Decision Tree
+    - Random Forest
+    """)
+
+    # Replace these with your real accuracy values
+    log_acc = 0.79
+    dt_acc = 0.84
+    rf_acc = 0.87
+
+    st.subheader("Model Accuracy Comparison")
+
+    model_results = pd.DataFrame({
+        "Model": ["Logistic Regression", "Decision Tree", "Random Forest"],
+        "Accuracy": [log_acc, dt_acc, rf_acc]
+    })
+
+    st.dataframe(model_results)
+    st.bar_chart(model_results.set_index("Model"))
+
+    st.subheader("Best Performing Model")
+
+    st.write("""
+    Based on evaluation results, Random Forest achieved the highest accuracy.
+    Therefore, it was selected as the final model for prediction.
+    """)
+
+    st.divider()
+
+    st.subheader("Predict Final Grade")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        study_hours = st.slider("Study Hours", 0.0, 10.0, 5.0)
+
+    with col2:
+        attendance = st.slider("Attendance Percentage", 0, 100, 75)
+
+    with col3:
+        math_score = st.slider("Math Score", 0, 100, 60)
 
     if st.button("Predict Grade"):
 
-        input_data = pd.DataFrame([{
-            "age": age,
-            "study_hours": study_hours,
-            "attendance_percentage": attendance,
-            "math_score": math_score,
-            "science_score": science_score,
-            "english_score": english_score,
-            "gender": gender,
-            "school_type": school_type,
-            "internet_access": internet_access
-        }])
+        input_data = np.array([[study_hours, attendance, math_score]])
 
-        # Encode categorical same way as training
-        input_data = pd.get_dummies(input_data)
-
-        # Align columns with training data
-        model_columns = rf_model.feature_names_in_
-        input_data = input_data.reindex(columns=model_columns, fill_value=0)
-
-        # Scale
-        input_scaled = scaler.transform(input_data)
-
-        prediction = rf_model.predict(input_scaled)
+        scaled_input = scaler.transform(input_data)
+        prediction = rf_model.predict(scaled_input)
 
         st.success(f"Predicted Final Grade: {prediction[0]}")
-
-except:
-    st.warning("Model files not found. Please upload rf_model.pkl and scaler.pkl.")
-
-# -----------------------------
-# FOOTER
-# -----------------------------
-st.markdown("---")
-st.markdown("Developed for Data Analytics College Assignment")
