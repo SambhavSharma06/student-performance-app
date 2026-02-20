@@ -1,169 +1,186 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
 
-# Load trained model and scaler
-rf_model = joblib.load("rf_model.pkl")
-scaler = joblib.load("scaler.pkl")
-
-# Load dataset
-df = pd.read_csv("The_Real_Student_Performance.csv")
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
 
 st.set_page_config(page_title="Student Performance Analytics", layout="wide")
 
+# ==============================
+# Load Dataset
+# ==============================
+
+@st.cache_data
+def load_data():
+    df = pd.read_csv("The_Real_Student_Performance.csv")
+    return df
+
+df = load_data()
+
+# ==============================
+# Encode Data
+# ==============================
+
+df_encoded = df.copy()
+
+label_encoders = {}
+for col in df_encoded.select_dtypes(include='object').columns:
+    le = LabelEncoder()
+    df_encoded[col] = le.fit_transform(df_encoded[col])
+    label_encoders[col] = le
+
+X = df_encoded.drop("math score", axis=1)
+y = df_encoded["math score"]
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X_scaled, y, test_size=0.2, random_state=42
+)
+
+# ==============================
+# Train Models
+# ==============================
+
+rf_model = RandomForestRegressor(
+    n_estimators=100,
+    max_depth=10,
+    random_state=42
+)
+rf_model.fit(X_train, y_train)
+
+lr_model = LinearRegression()
+lr_model.fit(X_train, y_train)
+
+rf_score = r2_score(y_test, rf_model.predict(X_test))
+lr_score = r2_score(y_test, lr_model.predict(X_test))
+
+# ==============================
 # Sidebar Navigation
+# ==============================
+
 st.sidebar.title("Navigation")
 page = st.sidebar.radio(
-    "Go to:",
+    "Go to",
     ["Project Overview", "Data Exploration", "Machine Learning Models"]
 )
 
-# ---------------------------------------------------------
-# PAGE 1 — PROJECT OVERVIEW
-# ---------------------------------------------------------
+# ==============================
+# PAGE 1 — OVERVIEW
+# ==============================
 
 if page == "Project Overview":
 
-    st.title("Student Performance Analytics Project")
+    st.title("🎓 Student Performance Analytics System")
 
     st.markdown("""
-    This project analyses student academic performance using data analytics and machine learning.
-    
-    The objective is to understand which factors influence final grades and build predictive models 
-    that can estimate student outcomes.
+    This project analyzes student academic performance and uses machine learning
+    models to predict final math scores based on various demographic and academic factors.
+
+    The objective is to understand how different variables influence student performance
+    and determine which machine learning model provides the best predictive accuracy.
     """)
 
     col1, col2, col3 = st.columns(3)
 
-    col1.metric("Total Students", df.shape[0])
-    col2.metric("Total Features", df.shape[1])
-    col3.metric("Target Variable", "final_grade")
+    col1.metric("Total Students", len(df))
+    col2.metric("Features Used", X.shape[1])
+    col3.metric("Models Trained", 2)
+
+    st.subheader("Project Approach")
 
     st.markdown("""
-    ### Approach Used
-
-    • Exploratory Data Analysis (EDA)  
-    • Data Preprocessing (Encoding + Scaling)  
-    • Model Training (Logistic Regression, Decision Tree, Random Forest)  
-    • Model Evaluation (Accuracy, Precision, Recall, F1-score)  
-
-    Random Forest achieved the highest performance and was selected as the final model.
+    1. Data preprocessing and encoding categorical variables  
+    2. Feature scaling using StandardScaler  
+    3. Training multiple regression models  
+    4. Comparing performance using R² Score  
+    5. Selecting best-performing model  
     """)
 
-    st.markdown("### Sample Data")
-    st.dataframe(df.head())
-
-# ---------------------------------------------------------
+# ==============================
 # PAGE 2 — DATA EXPLORATION
-# ---------------------------------------------------------
+# ==============================
 
 elif page == "Data Exploration":
 
-    st.title("Exploratory Data Analysis")
+    st.title("📊 Data Exploration & Filters")
 
-    st.markdown("Use the filters below to explore the dataset dynamically.")
+    st.markdown("""
+    Use the filters below to explore how different student groups perform.
+    """)
 
-    col1, col2 = st.columns(2)
-
-    gender_filter = col1.multiselect(
-        "Select Gender",
-        options=df["gender"].unique(),
-        default=df["gender"].unique()
+    gender_filter = st.selectbox(
+        "Filter by Gender",
+        ["All"] + list(df["gender"].unique())
     )
 
-    school_filter = col2.multiselect(
-        "Select School Type",
-        options=df["school_type"].unique(),
-        default=df["school_type"].unique()
+    race_filter = st.selectbox(
+        "Filter by Race/Ethnicity",
+        ["All"] + list(df["race/ethnicity"].unique())
     )
 
-    parent_filter = st.multiselect(
-        "Select Parent Education Level",
-        options=df["parent_education"].unique(),
-        default=df["parent_education"].unique()
+    parental_filter = st.selectbox(
+        "Filter by Parental Education",
+        ["All"] + list(df["parental level of education"].unique())
     )
 
-    filtered_df = df[
-        (df["gender"].isin(gender_filter)) &
-        (df["school_type"].isin(school_filter)) &
-        (df["parent_education"].isin(parent_filter))
-    ]
+    filtered_df = df.copy()
 
-    st.markdown("### Filtered Dataset")
+    if gender_filter != "All":
+        filtered_df = filtered_df[filtered_df["gender"] == gender_filter]
+
+    if race_filter != "All":
+        filtered_df = filtered_df[filtered_df["race/ethnicity"] == race_filter]
+
+    if parental_filter != "All":
+        filtered_df = filtered_df[filtered_df["parental level of education"] == parental_filter]
+
+    st.write("Filtered Data")
     st.dataframe(filtered_df)
 
-    st.markdown("### Study Hours vs Final Grade")
-    st.scatter_chart(filtered_df[["study_hours", "overall_score"]])
+    st.subheader("Average Scores")
 
-    st.markdown("### Attendance vs Final Grade")
-    st.scatter_chart(filtered_df[["attendance_percentage", "overall_score"]])
+    st.write(filtered_df[["math score", "reading score", "writing score"]].mean())
 
-# ---------------------------------------------------------
-# PAGE 3 — MACHINE LEARNING MODELS
-# ---------------------------------------------------------
+# ==============================
+# PAGE 3 — MACHINE LEARNING
+# ==============================
 
 elif page == "Machine Learning Models":
 
-    st.title("Machine Learning Model Prediction")
+    st.title("🤖 Machine Learning Models")
 
-    st.markdown("""
-    The Random Forest model was selected as the best-performing algorithm 
-    based on accuracy and balanced classification metrics.
-    """)
+    st.subheader("Model Comparison")
 
-    st.subheader("Enter Student Details")
+    col1, col2 = st.columns(2)
 
-    col1, col2, col3 = st.columns(3)
+    col1.metric("Random Forest R² Score", round(rf_score, 3))
+    col2.metric("Linear Regression R² Score", round(lr_score, 3))
 
-    study_hours = col1.slider("Study Hours", 0, 10, 5)
-    attendance = col2.slider("Attendance Percentage", 0, 100, 75)
-    math_score = col3.slider("Math Score", 0, 100, 60)
+    if rf_score > lr_score:
+        best_model = "Random Forest"
+    else:
+        best_model = "Linear Regression"
 
-    science_score = col1.slider("Science Score", 0, 100, 60)
-    english_score = col2.slider("English Score", 0, 100, 60)
+    st.success(f"Best Performing Model: {best_model}")
 
-    gender = col1.selectbox("Gender", df["gender"].unique())
-    school_type = col2.selectbox("School Type", df["school_type"].unique())
-    parent_education = col3.selectbox("Parent Education", df["parent_education"].unique())
-    internet_access = col1.selectbox("Internet Access", df["internet_access"].unique())
-    extra_activities = col2.selectbox("Extra Activities", df["extra_activities"].unique())
+    st.subheader("Predict Student Math Score")
+
+    input_data = []
+
+    for col in X.columns:
+        value = st.number_input(f"Enter {col}", value=0.0)
+        input_data.append(value)
 
     if st.button("Predict Final Grade"):
+        input_array = np.array(input_data).reshape(1, -1)
+        input_scaled = scaler.transform(input_array)
 
-        input_dict = {
-            "study_hours": study_hours,
-            "attendance_percentage": attendance,
-            "math_score": math_score,
-            "science_score": science_score,
-            "english_score": english_score,
-            "gender": gender,
-            "school_type": school_type,
-            "parent_education": parent_education,
-            "internet_access": internet_access,
-            "extra_activities": extra_activities
-        }
+        prediction = rf_model.predict(input_scaled)[0]
 
-        input_df = pd.DataFrame([input_dict])
-
-        # Apply same encoding as training
-        input_df = pd.get_dummies(input_df)
-
-        # Align with training features
-        input_df = input_df.reindex(
-            columns=rf_model.feature_names_in_,
-            fill_value=0
-        )
-
-        # Scale input
-        scaled_input = scaler.transform(input_df)
-
-        # Predict
-        prediction = rf_model.predict(scaled_input)
-
-        st.success(f"Predicted Final Grade: {prediction[0]}")
-
-        st.markdown("""
-        This prediction is generated using the trained Random Forest model,
-        which was selected as the final model due to superior performance.
-        """)
+        st.success(f"Predicted Math Score: {round(prediction, 2)}")
