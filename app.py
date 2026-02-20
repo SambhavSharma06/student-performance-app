@@ -10,31 +10,35 @@ from sklearn.metrics import r2_score
 
 st.set_page_config(page_title="Student Performance Analytics", layout="wide")
 
-# ==============================
-# Load Dataset
-# ==============================
+# =====================================================
+# LOAD DATA
+# =====================================================
 
 @st.cache_data
 def load_data():
     df = pd.read_csv("The_Real_Student_Performance.csv")
+    df.columns = df.columns.str.strip()  # remove hidden spaces
     return df
 
 df = load_data()
 
-# ==============================
-# Encode Data
-# ==============================
+# Automatically detect math score column
+target_column = [col for col in df.columns if "math" in col.lower()][0]
+
+# =====================================================
+# ENCODE DATA
+# =====================================================
 
 df_encoded = df.copy()
 
 label_encoders = {}
-for col in df_encoded.select_dtypes(include='object').columns:
+for col in df_encoded.select_dtypes(include="object").columns:
     le = LabelEncoder()
     df_encoded[col] = le.fit_transform(df_encoded[col])
     label_encoders[col] = le
 
-X = df_encoded.drop("math score", axis=1)
-y = df_encoded["math score"]
+X = df_encoded.drop(target_column, axis=1)
+y = df_encoded[target_column]
 
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
@@ -43,9 +47,9 @@ X_train, X_test, y_train, y_test = train_test_split(
     X_scaled, y, test_size=0.2, random_state=42
 )
 
-# ==============================
-# Train Models
-# ==============================
+# =====================================================
+# TRAIN MODELS
+# =====================================================
 
 rf_model = RandomForestRegressor(
     n_estimators=100,
@@ -60,9 +64,9 @@ lr_model.fit(X_train, y_train)
 rf_score = r2_score(y_test, rf_model.predict(X_test))
 lr_score = r2_score(y_test, lr_model.predict(X_test))
 
-# ==============================
-# Sidebar Navigation
-# ==============================
+# =====================================================
+# SIDEBAR NAVIGATION
+# =====================================================
 
 st.sidebar.title("Navigation")
 page = st.sidebar.radio(
@@ -70,92 +74,75 @@ page = st.sidebar.radio(
     ["Project Overview", "Data Exploration", "Machine Learning Models"]
 )
 
-# ==============================
-# PAGE 1 — OVERVIEW
-# ==============================
+# =====================================================
+# PAGE 1 — PROJECT OVERVIEW
+# =====================================================
 
 if page == "Project Overview":
 
     st.title("🎓 Student Performance Analytics System")
 
     st.markdown("""
-    This project analyzes student academic performance and uses machine learning
-    models to predict final math scores based on various demographic and academic factors.
+    This project analyzes student academic performance using machine learning.
 
-    The objective is to understand how different variables influence student performance
-    and determine which machine learning model provides the best predictive accuracy.
+    The system explores how demographic, social, and academic factors influence 
+    student math scores and compares different regression models to determine 
+    which provides the most accurate predictions.
     """)
 
     col1, col2, col3 = st.columns(3)
 
     col1.metric("Total Students", len(df))
-    col2.metric("Features Used", X.shape[1])
-    col3.metric("Models Trained", 2)
+    col2.metric("Total Features", X.shape[1])
+    col3.metric("Models Compared", 2)
 
-    st.subheader("Project Approach")
+    st.subheader("Methodology")
 
     st.markdown("""
-    1. Data preprocessing and encoding categorical variables  
-    2. Feature scaling using StandardScaler  
-    3. Training multiple regression models  
-    4. Comparing performance using R² Score  
-    5. Selecting best-performing model  
+    - Data Cleaning & Preprocessing  
+    - Encoding Categorical Variables  
+    - Feature Scaling using StandardScaler  
+    - Training Regression Models  
+    - Evaluating Performance using R² Score  
     """)
 
-# ==============================
+# =====================================================
 # PAGE 2 — DATA EXPLORATION
-# ==============================
+# =====================================================
 
 elif page == "Data Exploration":
 
-    st.title("📊 Data Exploration & Filters")
+    st.title("📊 Data Exploration & Filtering")
 
     st.markdown("""
-    Use the filters below to explore how different student groups perform.
+    Use the filters below to explore how different groups of students perform.
     """)
-
-    gender_filter = st.selectbox(
-        "Filter by Gender",
-        ["All"] + list(df["gender"].unique())
-    )
-
-    race_filter = st.selectbox(
-        "Filter by Race/Ethnicity",
-        ["All"] + list(df["race/ethnicity"].unique())
-    )
-
-    parental_filter = st.selectbox(
-        "Filter by Parental Education",
-        ["All"] + list(df["parental level of education"].unique())
-    )
 
     filtered_df = df.copy()
 
-    if gender_filter != "All":
-        filtered_df = filtered_df[filtered_df["gender"] == gender_filter]
+    # Dynamic filters for categorical columns
+    categorical_columns = df.select_dtypes(include="object").columns
 
-    if race_filter != "All":
-        filtered_df = filtered_df[filtered_df["race/ethnicity"] == race_filter]
+    for col in categorical_columns:
+        options = ["All"] + list(df[col].unique())
+        selection = st.selectbox(f"Filter by {col}", options)
+        if selection != "All":
+            filtered_df = filtered_df[filtered_df[col] == selection]
 
-    if parental_filter != "All":
-        filtered_df = filtered_df[filtered_df["parental level of education"] == parental_filter]
-
-    st.write("Filtered Data")
+    st.subheader("Filtered Dataset")
     st.dataframe(filtered_df)
 
     st.subheader("Average Scores")
+    numeric_cols = filtered_df.select_dtypes(include=np.number).columns
+    st.write(filtered_df[numeric_cols].mean())
 
-    st.write(filtered_df[["math score", "reading score", "writing score"]].mean())
-
-# ==============================
-# PAGE 3 — MACHINE LEARNING
-# ==============================
+# =====================================================
+# PAGE 3 — MACHINE LEARNING MODELS
+# =====================================================
 
 elif page == "Machine Learning Models":
 
-    st.title("🤖 Machine Learning Models")
-
-    st.subheader("Model Comparison")
+    st.title("🤖 Machine Learning Model Comparison")
 
     col1, col2 = st.columns(2)
 
@@ -177,7 +164,8 @@ elif page == "Machine Learning Models":
         value = st.number_input(f"Enter {col}", value=0.0)
         input_data.append(value)
 
-    if st.button("Predict Final Grade"):
+    if st.button("Predict Final Score"):
+
         input_array = np.array(input_data).reshape(1, -1)
         input_scaled = scaler.transform(input_array)
 
