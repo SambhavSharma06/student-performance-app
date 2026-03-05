@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This project aims to predict student final grades using machine learning techniques.  
+This project aims to predict student final grades using machine learning techniques. 
 The objective is to analyse various academic and behavioural factors such as study hours, attendance, and subject scores, and determine their impact on final academic performance.
 
 The project includes:
