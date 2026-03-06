@@ -22,7 +22,14 @@ def load_data():
 
 df = load_data()
 
-# Target variable is now overall_score
+# Remove columns that should not be used
+drop_columns = ["student_id", "final_grade"]
+
+for col in drop_columns:
+    if col in df.columns:
+        df = df.drop(col, axis=1)
+
+# Target variable
 target_column = "overall_score"
 
 # =====================================================
@@ -33,24 +40,19 @@ df_encoded = df.copy()
 
 label_encoders = {}
 
-# Encode categorical columns
 for col in df_encoded.select_dtypes(include="object").columns:
     le = LabelEncoder()
     df_encoded[col] = le.fit_transform(df_encoded[col])
     label_encoders[col] = le
 
-# Features and target
 X = df_encoded.drop(target_column, axis=1)
 y = df_encoded[target_column]
 
-# Save feature order
 feature_columns = X.columns
 
-# Scale numerical values
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
-# Train / test split
 X_train, X_test, y_train, y_test = train_test_split(
     X_scaled, y, test_size=0.2, random_state=42
 )
@@ -95,20 +97,17 @@ page = st.sidebar.radio(
 
 if page == "Project Overview":
 
-    st.title("🎓 Student Performance Analytics System")
+    st.title("Student Performance Analytics System")
 
-    st.markdown("""
+    st.write("""
 This project analyzes student academic performance using machine learning.
 
-The goal of this system is to understand how factors such as study hours,
-attendance, internet access, school type, and family background affect
-student academic results.
+The system studies how different factors such as study hours,
+attendance, school type, and student background influence
+academic results.
 
-Using this dataset, machine learning models are trained to predict
-a student's **overall academic score**.
-
-The system also compares multiple models to determine which model
-provides the most accurate predictions.
+Machine learning models are trained on the dataset in order
+to predict the overall academic performance of students.
 """)
 
     col1, col2, col3 = st.columns(3)
@@ -123,24 +122,13 @@ provides the most accurate predictions.
 
 elif page == "Dataset Exploration":
 
-    st.title("📊 Dataset Exploration")
+    st.title("Dataset Exploration")
 
     st.subheader("Dataset Preview")
-
     st.dataframe(df.head())
 
     st.subheader("Statistical Summary")
-
     st.write(df.describe())
-
-    st.subheader("Dataset Information")
-
-    st.write("""
-This dataset contains demographic, social, and academic information
-about students. The data includes variables such as study hours,
-attendance percentage, subject scores, school type, and parental
-education level.
-""")
 
 # =====================================================
 # PAGE 3 — MACHINE LEARNING MODELS
@@ -148,17 +136,7 @@ education level.
 
 elif page == "Machine Learning Models":
 
-    st.title("🤖 Machine Learning Model Evaluation")
-
-    st.markdown("""
-Two machine learning regression models were trained in this project.
-
-• Linear Regression  
-• Random Forest Regressor  
-
-These models were evaluated using the **R² Score**, which measures
-how well the model explains the variation in student performance.
-""")
+    st.title("Machine Learning Model Comparison")
 
     col1, col2 = st.columns(2)
 
@@ -171,24 +149,22 @@ how well the model explains the variation in student performance.
         st.success("Linear Regression performed better.")
 
 # =====================================================
-# PAGE 4 — PREDICTION SYSTEM
+# PAGE 4 — PREDICTION
 # =====================================================
 
 elif page == "Prediction System":
 
-    st.title("🔮 Predict Student Overall Score")
+    st.title("Predict Student Overall Score")
 
-    st.markdown("""
-Enter the student information below.  
-The system will use the trained Random Forest model
-to estimate the expected **overall academic score**.
+    st.write("""
+Enter student information below.
+The model will estimate the student's expected overall academic score.
 """)
 
     input_data = {}
 
     for col in feature_columns:
 
-        # If categorical → dropdown
         if col in label_encoders:
 
             options = df[col].unique()
@@ -198,7 +174,6 @@ to estimate the expected **overall academic score**.
                 options
             )
 
-        # If numeric → slider
         else:
 
             min_val = float(df[col].min())
@@ -212,19 +187,16 @@ to estimate the expected **overall academic score**.
                 mean_val
             )
 
-    if st.button("Predict Overall Score"):
+    if st.button("Predict Score"):
 
         input_df = pd.DataFrame([input_data])
 
-        # Encode categorical features
         for col in label_encoders:
             if col in input_df:
                 input_df[col] = label_encoders[col].transform(input_df[col])
 
-        # Ensure correct feature order
         input_df = input_df[feature_columns]
 
-        # Scale input
         input_scaled = scaler.transform(input_df)
 
         prediction = rf_model.predict(input_scaled)[0]
