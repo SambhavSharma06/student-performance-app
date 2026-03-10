@@ -1,135 +1,105 @@
-# Import Streamlit to build the web application interface
+# Import Streamlit library to create the web application interface
 import streamlit as st
 
-# Import pandas for handling and analyzing tabular data
+# Import pandas for reading and manipulating datasets
 import pandas as pd
 
 # Import numpy for numerical operations
 import numpy as np
 
-# Import train_test_split to divide the dataset into training and testing sets
+# Import train_test_split to divide dataset into training and testing data
 from sklearn.model_selection import train_test_split
 
-# Import LabelEncoder to convert categorical text data into numbers
-# Import StandardScaler to normalize numerical values
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+# Import StandardScaler to scale numerical values
+from sklearn.preprocessing import StandardScaler
 
-# Import RandomForestRegressor which is an ensemble machine learning model
-from sklearn.ensemble import RandomForestRegressor
+# Import three machine learning models
+from sklearn.linear_model import LinearRegression        # Linear Regression model
+from sklearn.tree import DecisionTreeRegressor           # Decision Tree model
+from sklearn.ensemble import RandomForestRegressor       # Random Forest model
 
-# Import LinearRegression which is a simple baseline regression model
-from sklearn.linear_model import LinearRegression
-
-# Import r2_score to evaluate how well the models perform
+# Import evaluation metric to measure model performance
 from sklearn.metrics import r2_score
 
-# Configure the Streamlit page layout and title
+
+# Configure the Streamlit page
+# page_title sets the browser tab name
+# layout="wide" allows full screen width for better layout
 st.set_page_config(page_title="Student Performance Analytics", layout="wide")
 
 # LOAD DATA
 
-# Cache the data loading function so the dataset does not reload every time the app updates
+# Cache the dataset loading function so the file is not read repeatedly
 @st.cache_data
 def load_data():
 
-    # Read the student dataset from the CSV file
+    # Read the dataset from CSV file
     df = pd.read_csv("The_Real_Student_Performance.csv")
 
-    # Remove hidden spaces from column names to avoid errors later
+    # Remove hidden spaces from column names
     df.columns = df.columns.str.strip()
 
     # Return the cleaned dataframe
     return df
 
 
-# Load the dataset by calling the function
+# Call the function to load the dataset
 df = load_data()
 
-# REMOVE COLUMNS THAT SHOULD NOT BE USED
+# REMOVE USELESS COLUMNS
 
-# These columns are not useful for prediction
+# student_id is just an identifier and does not affect predictions
+# final_grade is removed to avoid data leakage
 drop_columns = ["student_id", "final_grade"]
 
-# Loop through the list of columns to remove them safely
+# Loop through the columns to safely remove them
 for col in drop_columns:
 
-    # Check if the column exists before removing it
+    # Check if the column exists in the dataset
     if col in df.columns:
 
-        # Drop the column from the dataframe
+        # Remove the column from the dataset
         df = df.drop(col, axis=1)
 
-# DEFINE TARGET VARIABLE
 
-# The value we want the model to predict is the student's overall score
+# Define the target variable that we want to predict
 target_column = "overall_score"
 
-# DATA PREPROCESSING
+# CONVERT CATEGORICAL DATA USING DUMMY VARIABLES
 
-# Make a copy of the dataset for encoding operations
-df_encoded = df.copy()
-
-# Dictionary to store label encoders for each categorical column
-label_encoders = {}
+# Convert categorical columns into dummy variables
+# This transforms text values into numerical columns
+df_encoded = pd.get_dummies(df)
 
 
-# Loop through columns that contain text values
-for col in df_encoded.select_dtypes(include="object").columns:
-
-    # Create a label encoder
-    le = LabelEncoder()
-
-    # Convert categorical values into numerical values
-    df_encoded[col] = le.fit_transform(df_encoded[col])
-
-    # Store the encoder so it can be reused later
-    label_encoders[col] = le
-
-
-# Separate input features from the target variable
+# Separate features (X) from the target variable (y)
 X = df_encoded.drop(target_column, axis=1)
-
-# Target variable the model will learn to predict
 y = df_encoded[target_column]
 
-# Store feature column names for later use in prediction
+# Store the feature column names for later use during prediction
 feature_columns = X.columns
 
 # FEATURE SCALING
 
-# Create a scaler to standardize numeric values
+# Create a StandardScaler object
 scaler = StandardScaler()
 
-# Fit the scaler on the data and transform it
+# Fit the scaler to the dataset and transform the values
 X_scaled = scaler.fit_transform(X)
 
-# SPLIT DATA INTO TRAIN AND TEST SETS
+# TRAIN TEST SPLIT
 
-# Divide the dataset into training and testing data
-# 80% is used to train the model
-# 20% is used to test model performance
+# Split the dataset into training and testing data
+# 80% for training and 20% for testing
 X_train, X_test, y_train, y_test = train_test_split(
-    X_scaled, y, test_size=0.2, random_state=42
+
+    X_scaled,      # scaled feature dataset
+    y,             # target variable
+    test_size=0.2, # 20% data used for testing
+    random_state=42  # random seed for reproducibility
 )
 
 # TRAIN MACHINE LEARNING MODELS
-
-# Create the Random Forest model
-rf_model = RandomForestRegressor(
-
-    # Number of trees used in the forest
-    n_estimators=100,
-
-    # Maximum depth of each tree
-    max_depth=10,
-
-    # Random seed for reproducibility
-    random_state=42
-)
-
-# Train the Random Forest model using the training data
-rf_model.fit(X_train, y_train)
-
 
 # Create a Linear Regression model
 lr_model = LinearRegression()
@@ -137,22 +107,69 @@ lr_model = LinearRegression()
 # Train the Linear Regression model
 lr_model.fit(X_train, y_train)
 
+
+# Create a Decision Tree model
+dt_model = DecisionTreeRegressor(
+
+    # Maximum depth of the tree
+    max_depth=10,
+
+    # Random seed for consistent results
+    random_state=42
+)
+
+# Train the Decision Tree model
+dt_model.fit(X_train, y_train)
+
+
+# Create a Random Forest model
+rf_model = RandomForestRegressor(
+
+    # Number of decision trees used
+    n_estimators=100,
+
+    # Maximum depth of each tree
+    max_depth=10,
+
+    # Random seed
+    random_state=42
+)
+
+# Train the Random Forest model
+rf_model.fit(X_train, y_train)
+
 # MODEL EVALUATION
 
-# Evaluate Random Forest performance using R² score
-rf_score = r2_score(y_test, rf_model.predict(X_test))
+# Predict values using Linear Regression
+lr_predictions = lr_model.predict(X_test)
 
-# Evaluate Linear Regression performance
-lr_score = r2_score(y_test, lr_model.predict(X_test))
+# Calculate Linear Regression R² score
+lr_score = r2_score(y_test, lr_predictions)
+
+
+# Predict values using Decision Tree
+dt_predictions = dt_model.predict(X_test)
+
+# Calculate Decision Tree R² score
+dt_score = r2_score(y_test, dt_predictions)
+
+
+# Predict values using Random Forest
+rf_predictions = rf_model.predict(X_test)
+
+# Calculate Random Forest R² score
+rf_score = r2_score(y_test, rf_predictions)
 
 # SIDEBAR NAVIGATION
 
-# Create a sidebar title for navigation
+# Create a title in the sidebar
 st.sidebar.title("Navigation")
 
-# Create a radio button menu to switch between pages
+# Create radio buttons to navigate between pages
 page = st.sidebar.radio(
+
     "Select Section",
+
     [
         "Project Overview",
         "Dataset Exploration",
@@ -161,38 +178,38 @@ page = st.sidebar.radio(
     ]
 )
 
-# PAGE 1 — PROJECT OVERVIEW
+# PAGE 1 : PROJECT OVERVIEW
 
 if page == "Project Overview":
 
-    # Display page title
+    # Display the main project title
     st.title("Student Performance Analytics System")
 
-    # Explain the purpose of the project
+    # Explain the project purpose
     st.write("""
 This project analyzes student academic performance using machine learning.
 
-The system studies how different factors such as study hours,
-attendance, school type, and student background influence
-academic results.
+Different student factors such as study hours, attendance,
+school type, and learning conditions are used to understand
+how they affect student academic results.
 
-Machine learning models are trained on the dataset in order
-to predict the overall academic performance of students.
+Three machine learning models are trained and compared
+to determine which model predicts student performance best.
 """)
 
-    # Create three columns for displaying statistics
+    # Create three columns to display statistics
     col1, col2, col3 = st.columns(3)
 
     # Show total number of students
     col1.metric("Total Students", len(df))
 
-    # Show number of features used in the model
+    # Show number of input features used for prediction
     col2.metric("Number of Features", len(feature_columns))
 
     # Show number of machine learning models used
-    col3.metric("Models Compared", 2)
-    
-# PAGE 2 — DATASET EXPLORATION
+    col3.metric("Models Compared", 3)
+
+# PAGE 2 : DATASET EXPLORATION
 
 elif page == "Dataset Exploration":
 
@@ -203,99 +220,105 @@ elif page == "Dataset Exploration":
     st.subheader("Dataset Preview")
     st.dataframe(df.head())
 
-    # Display statistical summary of numerical columns
+    # Display statistical summary of numeric columns
     st.subheader("Statistical Summary")
     st.write(df.describe())
 
-# PAGE 3 — MACHINE LEARNING MODELS
+# PAGE 3 : MACHINE LEARNING MODELS
 
 elif page == "Machine Learning Models":
 
-    # Page title
+    # Display title for model comparison
     st.title("Machine Learning Model Comparison")
 
-    # Create two columns for displaying model scores
-    col1, col2 = st.columns(2)
+    # Create three columns to show model scores
+    col1, col2, col3 = st.columns(3)
 
-    # Display Random Forest performance score
-    col1.metric("Random Forest R² Score", round(rf_score,3))
+    # Display Linear Regression performance
+    col1.metric("Linear Regression R² Score", round(lr_score,3))
 
-    # Display Linear Regression performance score
-    col2.metric("Linear Regression R² Score", round(lr_score,3))
+    # Display Decision Tree performance
+    col2.metric("Decision Tree R² Score", round(dt_score,3))
 
-    # Display which model performed better
-    if rf_score > lr_score:
-        st.success("Random Forest performed better and was selected as the final model.")
-    else:
-        st.success("Linear Regression performed better.")
-        
-# PAGE 4 — PREDICTION SYSTEM
+    # Display Random Forest performance
+    col3.metric("Random Forest R² Score", round(rf_score,3))
+
+    # Determine the best model
+    scores = {
+        "Linear Regression": lr_score,
+        "Decision Tree": dt_score,
+        "Random Forest": rf_score
+    }
+
+    # Find the model with the highest score
+    best_model = max(scores, key=scores.get)
+
+    # Display best performing model
+    st.success(f"The best performing model is: {best_model}")
+
+# PAGE 4 : PREDICTION SYSTEM
 
 elif page == "Prediction System":
 
-    # Page title
+    # Display prediction page title
     st.title("Predict Student Overall Score")
 
-    # Explanation text for the prediction system
+    # Provide instructions to the user
     st.write("""
 Enter student information below.
-The model will estimate the student's expected overall academic score.
+
+The trained machine learning model will estimate
+the student's expected overall academic score.
 """)
 
-    # Dictionary to store user inputs
+    # Create dictionary to store user input
     input_data = {}
 
-    # Loop through each feature column
-    for col in feature_columns:
+    # Loop through dataset columns to create input fields
+    for col in df.columns:
 
-        # If the column is categorical
-        if col in label_encoders:
+        # Skip the target variable
+        if col == target_column:
+            continue
 
-            # Get possible category options
-            options = df[col].unique()
+        # If the column contains text (categorical)
+        if df[col].dtype == "object":
 
-            # Create dropdown selection for the user
+            # Create dropdown for category selection
             input_data[col] = st.selectbox(
-                f"{col}",
-                options
+                col,
+                df[col].unique()
             )
 
-        # If the column is numerical
+        # If the column contains numbers
         else:
 
-            # Determine slider range using dataset values
-            min_val = float(df[col].min())
-            max_val = float(df[col].max())
-            mean_val = float(df[col].mean())
-
-            # Create slider for numeric input
+            # Create slider for numeric values
             input_data[col] = st.slider(
-                f"{col}",
-                min_val,
-                max_val,
-                mean_val
+                col,
+                float(df[col].min()),
+                float(df[col].max()),
+                float(df[col].mean())
             )
 
 
-    # When the user clicks the prediction button
+    # When user presses prediction button
     if st.button("Predict Score"):
 
-        # Convert input dictionary into a dataframe
+        # Convert input dictionary into dataframe
         input_df = pd.DataFrame([input_data])
 
-        # Apply label encoding to categorical inputs
-        for col in label_encoders:
-            if col in input_df:
-                input_df[col] = label_encoders[col].transform(input_df[col])
+        # Apply dummy variable encoding to match training data
+        input_df = pd.get_dummies(input_df)
 
-        # Ensure column order matches the training data
-        input_df = input_df[feature_columns]
+        # Align columns with training dataset
+        input_df = input_df.reindex(columns=X.columns, fill_value=0)
 
-        # Scale the input values using the trained scaler
+        # Apply scaling using trained scaler
         input_scaled = scaler.transform(input_df)
 
-        # Use the Random Forest model to predict the score
+        # Use Random Forest model to generate prediction
         prediction = rf_model.predict(input_scaled)[0]
 
-        # Display the predicted score
+        # Display predicted overall score
         st.success(f"Predicted Overall Score: {round(prediction,2)}")
