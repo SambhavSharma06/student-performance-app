@@ -201,10 +201,10 @@ to determine which model predicts student performance best.
     col1, col2, col3 = st.columns(3)
 
     # Show total number of students
-    col1.metric("Total Students", len(df))
+    col1.metric("Total Students", 16000)
 
     # Show number of input features used for prediction
-    col2.metric("Number of Cotumns", 16)
+    col2.metric("Number of Columns", 16)
 
     # Show number of machine learning models used
     col3.metric("Models Compared", 3)
