@@ -201,7 +201,7 @@ to determine which model predicts student performance best.
     col1, col2, col3 = st.columns(3)
 
     # Show total number of students
-    col1.metric("Total Students", 16000)
+    col1.metric("Total Students", 25000)
 
     # Show number of input features used for prediction
     col2.metric("Number of Columns", 16)
