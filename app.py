@@ -1,19 +1,19 @@
-# Import Streamlit for building the web application
+# Import Streamlit for building the web app
 import streamlit as st
 
 # Import pandas for data handling
 import pandas as pd
 
-# Import numpy for numerical operations
+# Import numpy
 import numpy as np
 
-# Import train_test_split to divide data into training and testing sets
+# Import train_test_split to split data
 from sklearn.model_selection import train_test_split
 
-# Import StandardScaler for scaling numeric values
+# Import StandardScaler for scaling data
 from sklearn.preprocessing import StandardScaler
 
-# Import machine learning classification models
+# Import machine learning models
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -22,28 +22,27 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
 
-# Configure Streamlit page layout
+# Configure Streamlit page
 st.set_page_config(page_title="Student Performance Analytics", layout="wide")
 
 
 # ----------------------------------------------------
-# LOAD DATASET
+# LOAD DATA
 # ----------------------------------------------------
 
-# Cache the dataset so Streamlit loads it faster
 @st.cache_data
 def load_data():
 
-    # Read CSV dataset
+    # Read dataset
     df = pd.read_csv("The_Real_Student_Performance.csv")
 
-    # Remove hidden spaces from column names
+    # Remove hidden spaces
     df.columns = df.columns.str.strip()
 
     return df
 
 
-# Load the dataset
+# Load dataset
 df = load_data()
 
 
@@ -51,16 +50,16 @@ df = load_data()
 # REMOVE USELESS COLUMN
 # ----------------------------------------------------
 
-# student_id does not help prediction
+# student_id is only an identifier
 if "student_id" in df.columns:
     df = df.drop("student_id", axis=1)
 
 
 # ----------------------------------------------------
-# DEFINE TARGET VARIABLE
+# TARGET VARIABLE
 # ----------------------------------------------------
 
-# The model will predict final grade
+# Target variable is final_grade
 target_column = "final_grade"
 
 
@@ -68,10 +67,10 @@ target_column = "final_grade"
 # SEPARATE INPUT AND OUTPUT
 # ----------------------------------------------------
 
-# X contains all input columns
+# X contains input columns
 X = df.drop(target_column, axis=1)
 
-# y contains the target column
+# y contains target column
 y = df[target_column]
 
 
@@ -79,30 +78,26 @@ y = df[target_column]
 # CREATE DUMMY VARIABLES
 # ----------------------------------------------------
 
-# Convert categorical columns into numeric dummy variables
+# Convert categorical columns into numeric
 X = pd.get_dummies(X)
-
 
 # Save column names
 feature_columns = X.columns
 
 
 # ----------------------------------------------------
-# FEATURE SCALING
+# SCALE DATA
 # ----------------------------------------------------
 
-# Create scaler
 scaler = StandardScaler()
 
-# Scale the dataset
 X_scaled = scaler.fit_transform(X)
 
 
 # ----------------------------------------------------
-# TRAIN TEST SPLIT
+# SPLIT DATASET
 # ----------------------------------------------------
 
-# Split dataset into training and testing data
 X_train, X_test, y_train, y_test = train_test_split(
 
     X_scaled,
@@ -113,36 +108,26 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 
 # ----------------------------------------------------
-# TRAIN MACHINE LEARNING MODELS
+# TRAIN MODELS
 # ----------------------------------------------------
 
-# Logistic Regression model
+# Logistic Regression
 lr_model = LogisticRegression(max_iter=1000)
-
-# Train Logistic Regression
 lr_model.fit(X_train, y_train)
 
-
-# Decision Tree model
+# Decision Tree
 dt_model = DecisionTreeClassifier(
-
     max_depth=10,
     random_state=42
 )
-
-# Train Decision Tree
 dt_model.fit(X_train, y_train)
 
-
-# Random Forest model
+# Random Forest
 rf_model = RandomForestClassifier(
-
     n_estimators=100,
     max_depth=10,
     random_state=42
 )
-
-# Train Random Forest
 rf_model.fit(X_train, y_train)
 
 
@@ -150,24 +135,16 @@ rf_model.fit(X_train, y_train)
 # MODEL EVALUATION
 # ----------------------------------------------------
 
-# Logistic Regression predictions
-lr_pred = lr_model.predict(X_test)
-
 # Logistic Regression accuracy
+lr_pred = lr_model.predict(X_test)
 lr_score = accuracy_score(y_test, lr_pred)
 
-
-# Decision Tree predictions
-dt_pred = dt_model.predict(X_test)
-
 # Decision Tree accuracy
+dt_pred = dt_model.predict(X_test)
 dt_score = accuracy_score(y_test, dt_pred)
 
-
-# Random Forest predictions
-rf_pred = rf_model.predict(X_test)
-
 # Random Forest accuracy
+rf_pred = rf_model.predict(X_test)
 rf_score = accuracy_score(y_test, rf_pred)
 
 
@@ -205,8 +182,8 @@ Different factors such as study hours, attendance, school type,
 internet access, and learning methods are used to understand
 how students perform academically.
 
-Three machine learning models are trained and compared to determine
-which model predicts student final grades most accurately.
+Three machine learning models are trained and compared
+to determine which model predicts final grades most accurately.
 """)
 
     col1, col2, col3 = st.columns(3)
@@ -241,11 +218,19 @@ elif page == "Machine Learning Models":
 
     st.title("Machine Learning Model Comparison")
 
-    col1, col2, col3 = st.columns(3)
+    st.write("""
+Three machine learning models were trained and evaluated
+to determine which model predicts student final grades
+with the highest accuracy.
+""")
 
-    col1.metric("Logistic Regression Accuracy", round(lr_score,3))
-    col2.metric("Decision Tree Accuracy", round(dt_score,3))
-    col3.metric("Random Forest Accuracy", round(rf_score,3))
+    st.subheader("Accuracy Score (All Models)")
+
+    st.code(f"""
+Logistic Regression Accuracy: {lr_score:.4f}
+Decision Tree Accuracy: {dt_score:.4f}
+Random Forest Accuracy: {rf_score:.4f}
+""")
 
     scores = {
 
@@ -256,7 +241,7 @@ elif page == "Machine Learning Models":
 
     best_model = max(scores, key=scores.get)
 
-    st.success(f"Best Performing Model: {best_model}")
+    st.success(f"The best performing model is: {best_model}")
 
 
 # ----------------------------------------------------
@@ -268,10 +253,10 @@ elif page == "Prediction System":
     st.title("Predict Student Final Grade")
 
     st.write("""
-Enter student information below.
+Enter the student information below.
 
-The system will estimate the student's expected final grade
-using the trained Random Forest model.
+The system will use the trained Random Forest model
+to estimate the student's final academic grade.
 """)
 
     input_data = {}
@@ -284,21 +269,17 @@ using the trained Random Forest model.
         if df[col].dtype == "object":
 
             input_data[col] = st.selectbox(
-
                 col,
                 df[col].unique()
-
             )
 
         else:
 
             input_data[col] = st.slider(
-
                 col,
                 float(df[col].min()),
                 float(df[col].max()),
                 float(df[col].mean())
-
             )
 
 
