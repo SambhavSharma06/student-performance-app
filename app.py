@@ -23,14 +23,10 @@ from sklearn.linear_model import LinearRegression
 # Import r2_score to evaluate how well the models perform
 from sklearn.metrics import r2_score
 
-
 # Configure the Streamlit page layout and title
 st.set_page_config(page_title="Student Performance Analytics", layout="wide")
 
-
-# =====================================================
 # LOAD DATA
-# =====================================================
 
 # Cache the data loading function so the dataset does not reload every time the app updates
 @st.cache_data
@@ -49,10 +45,7 @@ def load_data():
 # Load the dataset by calling the function
 df = load_data()
 
-
-# =====================================================
 # REMOVE COLUMNS THAT SHOULD NOT BE USED
-# =====================================================
 
 # These columns are not useful for prediction
 drop_columns = ["student_id", "final_grade"]
@@ -66,18 +59,12 @@ for col in drop_columns:
         # Drop the column from the dataframe
         df = df.drop(col, axis=1)
 
-
-# =====================================================
 # DEFINE TARGET VARIABLE
-# =====================================================
 
 # The value we want the model to predict is the student's overall score
 target_column = "overall_score"
 
-
-# =====================================================
 # DATA PREPROCESSING
-# =====================================================
 
 # Make a copy of the dataset for encoding operations
 df_encoded = df.copy()
@@ -108,10 +95,7 @@ y = df_encoded[target_column]
 # Store feature column names for later use in prediction
 feature_columns = X.columns
 
-
-# =====================================================
 # FEATURE SCALING
-# =====================================================
 
 # Create a scaler to standardize numeric values
 scaler = StandardScaler()
@@ -119,10 +103,7 @@ scaler = StandardScaler()
 # Fit the scaler on the data and transform it
 X_scaled = scaler.fit_transform(X)
 
-
-# =====================================================
 # SPLIT DATA INTO TRAIN AND TEST SETS
-# =====================================================
 
 # Divide the dataset into training and testing data
 # 80% is used to train the model
@@ -131,10 +112,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     X_scaled, y, test_size=0.2, random_state=42
 )
 
-
-# =====================================================
 # TRAIN MACHINE LEARNING MODELS
-# =====================================================
 
 # Create the Random Forest model
 rf_model = RandomForestRegressor(
@@ -159,10 +137,7 @@ lr_model = LinearRegression()
 # Train the Linear Regression model
 lr_model.fit(X_train, y_train)
 
-
-# =====================================================
 # MODEL EVALUATION
-# =====================================================
 
 # Evaluate Random Forest performance using R² score
 rf_score = r2_score(y_test, rf_model.predict(X_test))
@@ -170,10 +145,7 @@ rf_score = r2_score(y_test, rf_model.predict(X_test))
 # Evaluate Linear Regression performance
 lr_score = r2_score(y_test, lr_model.predict(X_test))
 
-
-# =====================================================
 # SIDEBAR NAVIGATION
-# =====================================================
 
 # Create a sidebar title for navigation
 st.sidebar.title("Navigation")
@@ -189,10 +161,7 @@ page = st.sidebar.radio(
     ]
 )
 
-
-# =====================================================
 # PAGE 1 — PROJECT OVERVIEW
-# =====================================================
 
 if page == "Project Overview":
 
@@ -222,11 +191,8 @@ to predict the overall academic performance of students.
 
     # Show number of machine learning models used
     col3.metric("Models Compared", 2)
-
-
-# =====================================================
+    
 # PAGE 2 — DATASET EXPLORATION
-# =====================================================
 
 elif page == "Dataset Exploration":
 
@@ -241,10 +207,7 @@ elif page == "Dataset Exploration":
     st.subheader("Statistical Summary")
     st.write(df.describe())
 
-
-# =====================================================
 # PAGE 3 — MACHINE LEARNING MODELS
-# =====================================================
 
 elif page == "Machine Learning Models":
 
@@ -265,11 +228,8 @@ elif page == "Machine Learning Models":
         st.success("Random Forest performed better and was selected as the final model.")
     else:
         st.success("Linear Regression performed better.")
-
-
-# =====================================================
+        
 # PAGE 4 — PREDICTION SYSTEM
-# =====================================================
 
 elif page == "Prediction System":
 
