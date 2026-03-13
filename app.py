@@ -20,6 +20,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 st.set_page_config(
     page_title="Student Performance Analytics",
+    page_icon="🎓",
     layout="wide"
 )
 
@@ -42,11 +43,15 @@ df = load_data()
 
 
 # -----------------------------------------------------
-# REMOVE STUDENT ID
+# REMOVE USELESS COLUMNS
 # -----------------------------------------------------
 
 if "student_id" in df.columns:
     df = df.drop("student_id", axis=1)
+
+# remove overall score because it leaks information
+if "overall_score" in df.columns:
+    df = df.drop("overall_score", axis=1)
 
 
 # -----------------------------------------------------
@@ -66,7 +71,7 @@ y = df[target_column]
 
 
 # -----------------------------------------------------
-# CREATE DUMMY VARIABLES
+# DUMMY VARIABLES
 # -----------------------------------------------------
 
 X = pd.get_dummies(X)
@@ -110,10 +115,10 @@ rf_model.fit(X_train, y_train)
 
 
 # -----------------------------------------------------
-# SIDEBAR NAVIGATION
+# SIDEBAR
 # -----------------------------------------------------
 
-st.sidebar.title("Navigation")
+st.sidebar.title("📊 Navigation")
 
 page = st.sidebar.radio(
     "Select Section",
@@ -127,19 +132,19 @@ page = st.sidebar.radio(
 
 
 # -----------------------------------------------------
-# PAGE 1 : PROJECT OVERVIEW
+# PAGE 1
 # -----------------------------------------------------
 
 if page == "Project Overview":
 
-    st.title("Student Performance Analytics System")
+    st.title("🎓 Student Performance Analytics System")
 
     st.write("""
 This project analyzes student academic performance using machine learning.
 
-Different factors such as study hours, attendance percentage,
-school type, internet access, and other academic variables
-are used to understand how students perform academically.
+The system studies how factors such as study hours, attendance,
+school type, internet access, and learning methods influence
+student academic results.
 
 Three machine learning models were trained and compared
 to determine which model predicts student final grades
@@ -154,12 +159,12 @@ with the highest accuracy.
 
 
 # -----------------------------------------------------
-# PAGE 2 : DATASET EXPLORATION
+# PAGE 2
 # -----------------------------------------------------
 
 elif page == "Dataset Exploration":
 
-    st.title("Dataset Exploration")
+    st.title("📊 Dataset Exploration")
 
     st.subheader("Dataset Preview")
 
@@ -177,12 +182,14 @@ elif page == "Dataset Exploration":
 
 
 # -----------------------------------------------------
-# PAGE 3 : MODEL COMPARISON
+# PAGE 3
 # -----------------------------------------------------
 
 elif page == "Machine Learning Models":
 
-    st.title("Accuracy Score (All Models)")
+    st.title("🤖 Machine Learning Model Comparison")
+
+    st.subheader("Accuracy Score (All Models)")
 
     st.code("""
 Logistic Regression Accuracy: 0.7632
@@ -203,18 +210,18 @@ Random Forest Accuracy: 0.9024
 
 
 # -----------------------------------------------------
-# PAGE 4 : PREDICTION SYSTEM
+# PAGE 4
 # -----------------------------------------------------
 
 elif page == "Prediction System":
 
-    st.title("Predict Student Final Grade")
+    st.title("🎯 Predict Student Final Grade")
 
     st.write("""
 Enter student information below.
 
 The trained Random Forest model will estimate
-the student's final academic grade.
+the student's expected final grade.
 """)
 
     input_data = {}
@@ -227,14 +234,14 @@ the student's final academic grade.
         if df[col].dtype == "object":
 
             input_data[col] = st.selectbox(
-                col,
+                col.replace("_"," ").title(),
                 df[col].unique()
             )
 
         else:
 
             input_data[col] = st.slider(
-                col,
+                col.replace("_"," ").title(),
                 float(df[col].min()),
                 float(df[col].max()),
                 float(df[col].mean())
