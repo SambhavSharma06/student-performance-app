@@ -154,7 +154,7 @@ with the highest accuracy.
     col1, col2, col3 = st.columns(3)
 
     col1.metric("Total Students", len(df))
-    col2.metric("Total Columns", len(df.columns))
+    col2.metric("Total Columns", 16)
     col3.metric("Models Compared", 3)
 
 
