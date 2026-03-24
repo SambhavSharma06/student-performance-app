@@ -1,6 +1,5 @@
 
 # IMPORT LIBRARIES
-
 import streamlit as st        # Import Streamlit to build the web application interface
 import pandas as pd           # Import pandas to handle and manipulate tabular data
 import numpy as np            # Import numpy for numerical operations
@@ -13,7 +12,6 @@ from sklearn.tree import DecisionTreeClassifier       # Import Decision Tree cla
 from sklearn.ensemble import RandomForestClassifier   # Import Random Forest classification model
 
 # PAGE SETTINGS
-
 st.set_page_config(                               # Configure settings for the Streamlit web page
     page_title="Student Performance Analytics",   # Title shown in the browser tab
     page_icon="🎓",                                # Icon shown in the browser tab
@@ -21,7 +19,6 @@ st.set_page_config(                               # Configure settings for the S
 )
 
 # LOAD DATA
-
 @st.cache_data                                    # Cache the dataset so it loads faster when the app reloads
 def load_data():                                   # Define a function to load the dataset
 
@@ -35,7 +32,6 @@ def load_data():                                   # Define a function to load t
 df = load_data()                                    # Call the function to load the dataset
 
 # REMOVE USELESS COLUMNS
-
 if "student_id" in df.columns:                      # Check if student_id column exists
     df = df.drop("student_id", axis=1)              # Remove student_id because it does not help prediction
 
@@ -44,29 +40,24 @@ if "overall_score" in df.columns:                   # Check if overall_score col
     df = df.drop("overall_score", axis=1)           # Remove it because it already summarizes subject scores
 
 # TARGET VARIABLE
-
 target_column = "final_grade"                       # Define the target variable the model will predict
 
 # SPLIT INPUT AND OUTPUT
-
 X = df.drop(target_column, axis=1)                  # X contains all input variables except the target column
 
 y = df[target_column]                               # y contains the target variable (final_grade)
 
 # DUMMY VARIABLES
-
 X = pd.get_dummies(X)                               # Convert categorical columns into numerical dummy variables
 
 feature_columns = X.columns                         # Store the list of feature columns after encoding
 
 # SCALE DATA
-
 scaler = StandardScaler()                           # Create a StandardScaler object
 
 X_scaled = scaler.fit_transform(X)                  # Scale the dataset so all variables have similar ranges
 
 # TRAIN TEST SPLIT
-
 X_train, X_test, y_train, y_test = train_test_split(  # Split the dataset into training and testing sets
     X_scaled,                                          # Use the scaled features as input
     y,                                                 # Target variable
@@ -75,7 +66,6 @@ X_train, X_test, y_train, y_test = train_test_split(  # Split the dataset into t
 )
 
 # TRAIN MODELS
-
 lr_model = LogisticRegression(max_iter=1000)         # Create Logistic Regression model with increased iterations
 lr_model.fit(X_train, y_train)                       # Train the Logistic Regression model
 
@@ -86,7 +76,6 @@ rf_model = RandomForestClassifier(n_estimators=100, random_state=42)  # Create R
 rf_model.fit(X_train, y_train)                       # Train the Random Forest model
 
 # SIDEBAR
-
 st.sidebar.title("📊 Navigation")                     # Create sidebar title for navigation menu
 
 page = st.sidebar.radio(                              # Create radio buttons in sidebar
@@ -100,7 +89,6 @@ page = st.sidebar.radio(                              # Create radio buttons in 
 )
 
 # PAGE 1
-
 if page == "Project Overview":                         # Check if the user selected the overview page
 
     st.title("🎓 Student Performance Analytics System") # Display main project title
@@ -118,13 +106,11 @@ with the highest accuracy.
 """)
 
     col1, col2, col3 = st.columns(3)                   # Create three columns for metrics display
-
     col1.metric("Total Students", len(df))             # Show number of students in the dataset
     col2.metric("Total Columns", 16)                   # Show number of dataset columns
     col3.metric("Models Compared", 3)                  # Show number of machine learning models used
 
 # PAGE 2
-
 elif page == "Dataset Exploration":                    # Check if dataset exploration page is selected
 
     st.title("📊 Dataset Exploration")                 # Display page title
@@ -144,7 +130,6 @@ elif page == "Dataset Exploration":                    # Check if dataset explor
     st.bar_chart(grade_counts)                         # Display bar chart showing grade distribution
 
 # PAGE 3
-
 elif page == "Machine Learning Models":                # Check if model comparison page is selected
 
     st.title("🤖 Machine Learning Model Comparison")   # Display page title
@@ -169,7 +154,6 @@ Random Forest Accuracy: 0.9024
     st.bar_chart(model_data.set_index("Model"))        # Display bar chart comparing model accuracy
 
 # PAGE 4
-
 elif page == "Prediction System":                      # Check if prediction page is selected
 
     st.title("🎯 Predict Student Final Grade")         # Display prediction page title
