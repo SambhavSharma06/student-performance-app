@@ -136,7 +136,7 @@ Three models were compared and Random Forest performed the best.
     col1, col2, col3 = st.columns(3)
 
     col1.metric("Total Students", len(df))                # Number of students
-    col2.metric("Total Columns", len(df.columns))         # Number of columns
+    col2.metric("Total Columns", 16)         # Number of columns
     col3.metric("Models Compared", 3)                     # Number of models
 
 
