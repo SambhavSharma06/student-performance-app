@@ -164,7 +164,7 @@ Enter student information below.
 The trained Random Forest model will estimate
 the student's expected final grade.
 """)
-
+    
     input_data = {}                                    # Create empty dictionary to store user inputs
 
     for col in df.columns:                             # Loop through all dataset columns
