@@ -1,11 +1,16 @@
+# -----------------------------------------------------
+# IMPORT LIBRARIES
+# -----------------------------------------------------
 
+import streamlit as st
+import pandas as pd
+import numpy as np
+import joblib
+import os   # To check if files exist
 
-import streamlit as st                      # For building web app
-import pandas as pd                         # For handling data
-import numpy as np                          # For numerical operations
-import joblib                               # For loading saved model
-
-
+# -----------------------------------------------------
+# PAGE SETTINGS
+# -----------------------------------------------------
 
 st.set_page_config(
     page_title="Student Performance Analytics",
@@ -13,7 +18,9 @@ st.set_page_config(
     layout="wide"
 )
 
-
+# -----------------------------------------------------
+# LOAD DATA
+# -----------------------------------------------------
 
 @st.cache_data
 def load_data():
@@ -23,6 +30,9 @@ def load_data():
 
 df = load_data()
 
+# -----------------------------------------------------
+# REMOVE USELESS COLUMNS
+# -----------------------------------------------------
 
 if "student_id" in df.columns:
     df = df.drop("student_id", axis=1)
@@ -30,25 +40,36 @@ if "student_id" in df.columns:
 if "overall_score" in df.columns:
     df = df.drop("overall_score", axis=1)
 
-
+# -----------------------------------------------------
+# TARGET VARIABLE
+# -----------------------------------------------------
 
 target_column = "final_grade"
 
+# -----------------------------------------------------
+# PREPARE FEATURE STRUCTURE
+# -----------------------------------------------------
 
 X = df.drop(target_column, axis=1)
-
-# Apply dummy encoding
 X = pd.get_dummies(X)
-
-# Save structure
 feature_columns = X.columns
 
+# -----------------------------------------------------
+# LOAD MODEL + SCALER SAFELY
+# -----------------------------------------------------
 
-# LOAD TRAINED MODEL AND SCALER 
+if os.path.exists("rf_model.pkl") and os.path.exists("scaler.pkl"):
 
-rf_model = joblib.load("rf_model.pkl")   # Load trained Random Forest model
-scaler = joblib.load("scaler.pkl")       # Load scaler
+    rf_model = joblib.load("rf_model.pkl")
+    scaler = joblib.load("scaler.pkl")
 
+else:
+    st.error("Model files not found. Please upload rf_model.pkl and scaler.pkl")
+    st.stop()
+
+# -----------------------------------------------------
+# SIDEBAR
+# -----------------------------------------------------
 
 st.sidebar.title("📊 Navigation")
 
@@ -62,18 +83,22 @@ page = st.sidebar.radio(
     ]
 )
 
+# -----------------------------------------------------
+# PAGE 1 — OVERVIEW
+# -----------------------------------------------------
+
 if page == "Project Overview":
 
     st.title("🎓 Student Performance Analytics System")
 
     st.write("""
-This project analyzes student academic performance using machine learning.
+This project uses machine learning to predict student final grades.
 
-The system studies how factors such as study hours, attendance,
-school type, and student background influence academic results.
+The model was trained using student data such as study hours,
+attendance, and academic background.
 
-The model was trained using multiple algorithms, and Random Forest
-achieved the highest accuracy and was selected as the final model.
+Random Forest achieved the highest accuracy and was selected
+as the final model.
 """)
 
     col1, col2, col3 = st.columns(3)
@@ -82,7 +107,9 @@ achieved the highest accuracy and was selected as the final model.
     col2.metric("Total Columns", len(df.columns))
     col3.metric("Model Used", "Random Forest")
 
-
+# -----------------------------------------------------
+# PAGE 2 — DATA EXPLORATION
+# -----------------------------------------------------
 
 elif page == "Dataset Exploration":
 
@@ -98,6 +125,9 @@ elif page == "Dataset Exploration":
     grade_counts = df["final_grade"].value_counts()
     st.bar_chart(grade_counts)
 
+# -----------------------------------------------------
+# PAGE 3 — MODEL COMPARISON
+# -----------------------------------------------------
 
 elif page == "Machine Learning Models":
 
@@ -121,17 +151,16 @@ Random Forest Accuracy: 0.9024
     st.subheader("Model Accuracy Comparison")
     st.bar_chart(model_data.set_index("Model"))
 
-
+# -----------------------------------------------------
+# PAGE 4 — PREDICTION SYSTEM
+# -----------------------------------------------------
 
 elif page == "Prediction System":
 
     st.title("🎯 Predict Student Final Grade")
 
     st.write("""
-Enter student information below.
-
-The trained Random Forest model will predict
-the student's final grade.
+Enter student details below to predict the final grade.
 """)
 
     input_data = {}
@@ -144,14 +173,14 @@ the student's final grade.
         if df[col].dtype == "object":
 
             input_data[col] = st.selectbox(
-                col.replace("_"," ").title(),
+                col.replace("_", " ").title(),
                 df[col].unique()
             )
 
         else:
 
             input_data[col] = st.slider(
-                col.replace("_"," ").title(),
+                col.replace("_", " ").title(),
                 float(df[col].min()),
                 float(df[col].max()),
                 float(df[col].mean())
@@ -161,13 +190,13 @@ the student's final grade.
 
         input_df = pd.DataFrame([input_data])
 
-        # Apply same dummy encoding
+        # Apply same encoding
         input_df = pd.get_dummies(input_df)
 
-        # Match training structure
+        # Match training columns
         input_df = input_df.reindex(columns=feature_columns, fill_value=0)
 
-        # Apply scaling
+        # Scale input
         input_scaled = scaler.transform(input_df)
 
         # Predict
