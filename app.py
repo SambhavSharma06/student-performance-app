@@ -1,15 +1,15 @@
 
 # IMPORT LIBRARIES
-import streamlit as st        # Import Streamlit to build the web application interface
-import pandas as pd           # Import pandas to handle and manipulate tabular data
-import numpy as np            # Import numpy for numerical operations
+import streamlit as st# Import Streamlit to build the web application interface
+import pandas as pd# Import pandas to handle and manipulate tabular data
+import numpy as np# Import numpy for numerical operations
 
-from sklearn.model_selection import train_test_split  # Import function to split dataset into training and testing
-from sklearn.preprocessing import StandardScaler      # Import scaler to normalize numeric values
+from sklearn.model_selection import train_test_split# Import function to split dataset into training and testing
+from sklearn.preprocessing import StandardScaler# Import scaler to normalize numeric values
 
-from sklearn.linear_model import LogisticRegression   # Import Logistic Regression classification model
-from sklearn.tree import DecisionTreeClassifier       # Import Decision Tree classification model
-from sklearn.ensemble import RandomForestClassifier   # Import Random Forest classification model
+from sklearn.linear_model import LogisticRegression# Import Logistic Regression classification model
+from sklearn.tree import DecisionTreeClassifier# Import Decision Tree classification model
+from sklearn.ensemble import RandomForestClassifier# Import Random Forest classification model
 
 # PAGE SETTINGS
 st.set_page_config(                               # Configure settings for the Streamlit web page
