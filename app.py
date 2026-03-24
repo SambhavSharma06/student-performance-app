@@ -1,16 +1,11 @@
-# -----------------------------------------------------
-# IMPORT LIBRARIES
-# -----------------------------------------------------
+
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import os   # To check if files exist
+import os  
 
-# -----------------------------------------------------
-# PAGE SETTINGS
-# -----------------------------------------------------
 
 st.set_page_config(
     page_title="Student Performance Analytics",
@@ -18,9 +13,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# -----------------------------------------------------
-# LOAD DATA
-# -----------------------------------------------------
+
 
 @st.cache_data
 def load_data():
@@ -30,9 +23,7 @@ def load_data():
 
 df = load_data()
 
-# -----------------------------------------------------
-# REMOVE USELESS COLUMNS
-# -----------------------------------------------------
+
 
 if "student_id" in df.columns:
     df = df.drop("student_id", axis=1)
@@ -40,23 +31,16 @@ if "student_id" in df.columns:
 if "overall_score" in df.columns:
     df = df.drop("overall_score", axis=1)
 
-# -----------------------------------------------------
-# TARGET VARIABLE
-# -----------------------------------------------------
+
 
 target_column = "final_grade"
 
-# -----------------------------------------------------
-# PREPARE FEATURE STRUCTURE
-# -----------------------------------------------------
 
 X = df.drop(target_column, axis=1)
 X = pd.get_dummies(X)
 feature_columns = X.columns
 
-# -----------------------------------------------------
-# LOAD MODEL + SCALER SAFELY
-# -----------------------------------------------------
+
 
 if os.path.exists("rf_model.pkl") and os.path.exists("scaler.pkl"):
 
@@ -67,9 +51,7 @@ else:
     st.error("Model files not found. Please upload rf_model.pkl and scaler.pkl")
     st.stop()
 
-# -----------------------------------------------------
-# SIDEBAR
-# -----------------------------------------------------
+
 
 st.sidebar.title("📊 Navigation")
 
@@ -83,9 +65,6 @@ page = st.sidebar.radio(
     ]
 )
 
-# -----------------------------------------------------
-# PAGE 1 — OVERVIEW
-# -----------------------------------------------------
 
 if page == "Project Overview":
 
@@ -107,9 +86,6 @@ as the final model.
     col2.metric("Total Columns", len(df.columns))
     col3.metric("Model Used", "Random Forest")
 
-# -----------------------------------------------------
-# PAGE 2 — DATA EXPLORATION
-# -----------------------------------------------------
 
 elif page == "Dataset Exploration":
 
@@ -124,10 +100,6 @@ elif page == "Dataset Exploration":
     st.subheader("Distribution of Final Grades")
     grade_counts = df["final_grade"].value_counts()
     st.bar_chart(grade_counts)
-
-# -----------------------------------------------------
-# PAGE 3 — MODEL COMPARISON
-# -----------------------------------------------------
 
 elif page == "Machine Learning Models":
 
@@ -151,9 +123,6 @@ Random Forest Accuracy: 0.9024
     st.subheader("Model Accuracy Comparison")
     st.bar_chart(model_data.set_index("Model"))
 
-# -----------------------------------------------------
-# PAGE 4 — PREDICTION SYSTEM
-# -----------------------------------------------------
 
 elif page == "Prediction System":
 
