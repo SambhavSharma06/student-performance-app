@@ -42,10 +42,10 @@ def load_model():
 rf_model, scaler = load_model()
 
 # ===============================
-# PREPROCESS (IMPORTANT)
+# PREPROCESSING
 # ===============================
 
-# Remove unnecessary columns
+# Drop unnecessary columns
 if "student_id" in df.columns:
     df = df.drop("student_id", axis=1)
 
@@ -57,14 +57,14 @@ target_column = "final_grade"
 X = df.drop(target_column, axis=1)
 y = df[target_column]
 
-# Create dummy columns (IMPORTANT)
+# Create dummy variables (same as training)
 X = pd.get_dummies(X)
 
-# Save training feature structure
+# Save feature structure
 feature_columns = X.columns
 
 # ===============================
-# SIDEBAR
+# SIDEBAR NAVIGATION
 # ===============================
 
 st.sidebar.title("📊 Navigation")
@@ -80,7 +80,7 @@ page = st.sidebar.radio(
 )
 
 # ===============================
-# PAGE 1
+# PAGE 1 — OVERVIEW
 # ===============================
 
 if page == "Project Overview":
@@ -98,7 +98,7 @@ This project predicts student final grades using machine learning.
     col3.metric("Models Used", 3)
 
 # ===============================
-# PAGE 2
+# PAGE 2 — DATASET
 # ===============================
 
 elif page == "Dataset Exploration":
@@ -109,7 +109,7 @@ elif page == "Dataset Exploration":
     st.write(df.describe())
 
 # ===============================
-# PAGE 3
+# PAGE 3 — MODELS
 # ===============================
 
 elif page == "Machine Learning Models":
@@ -122,10 +122,10 @@ Decision Tree: 0.86
 Random Forest: 0.90
 """)
 
-    st.success("Random Forest is best.")
+    st.success("Random Forest performed best.")
 
 # ===============================
-# PAGE 4 (FIXED)
+# PAGE 4 — PREDICTION (FIXED)
 # ===============================
 
 elif page == "Prediction System":
@@ -134,44 +134,48 @@ elif page == "Prediction System":
 
     input_data = {}
 
-    for col in X.columns:
+    # 🔥 Use ORIGINAL columns (NOT dummy columns)
+    for col in df.columns:
 
-        # Skip dummy columns (we will rebuild them)
-        original_col = col.split("_")[0]
-
-        if original_col not in df.columns or original_col == target_column:
+        if col == target_column:
             continue
 
-        if df[original_col].dtype == "object":
+        if df[col].dtype == "object":
 
-            input_data[original_col] = st.selectbox(
-                original_col,
-                df[original_col].unique()
+            input_data[col] = st.selectbox(
+                col,
+                df[col].unique(),
+                key=col   # 🔥 prevents duplicate error
             )
 
         else:
 
-            input_data[original_col] = st.slider(
-                original_col,
-                float(df[original_col].min()),
-                float(df[original_col].max()),
-                float(df[original_col].mean())
+            input_data[col] = st.slider(
+                col,
+                float(df[col].min()),
+                float(df[col].max()),
+                float(df[col].mean()),
+                key=col   # 🔥 prevents duplicate error
             )
 
-    if st.button("Predict"):
+    # ===============================
+    # PREDICT BUTTON
+    # ===============================
+
+    if st.button("Predict Grade"):
 
         input_df = pd.DataFrame([input_data])
 
-        # APPLY DUMMIES (CRITICAL)
+        # Apply same dummy encoding
         input_df = pd.get_dummies(input_df)
 
-        # MATCH TRAINING COLUMNS (THIS FIXES ERROR)
+        # 🔥 Match training columns exactly
         input_df = input_df.reindex(columns=feature_columns, fill_value=0)
 
-        # SCALE
+        # Scale input
         input_scaled = scaler.transform(input_df)
 
-        # PREDICT
+        # Predict
         prediction = rf_model.predict(input_scaled)[0]
 
-        st.success(f"Predicted Grade: {prediction}")
+        st.success(f"Predicted Final Grade: {prediction}")
