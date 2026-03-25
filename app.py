@@ -91,8 +91,8 @@ Best Model: Random Forest
     col1, col2, col3 = st.columns(3)
 
     col1.metric("Students", len(df))
-    col2.metric("Features", len(df.columns))
-    col3.metric("Model", "Random Forest")
+    col2.metric("Features", 16)
+    col3.metric("Model", 3)
 
 
 # ===============================
