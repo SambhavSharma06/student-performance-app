@@ -1,25 +1,26 @@
 # ===============================
 # IMPORT LIBRARIES
 # ===============================
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 from joblib import load
 
-
 # ===============================
 # PAGE SETTINGS
 # ===============================
+
 st.set_page_config(
     page_title="Student Performance Analytics",
     page_icon="🎓",
     layout="wide"
 )
 
-
 # ===============================
 # LOAD DATA
 # ===============================
+
 @st.cache_data
 def load_data():
     df = pd.read_csv("The_Real_Student_Performance.csv")
@@ -28,10 +29,10 @@ def load_data():
 
 df = load_data()
 
-
 # ===============================
 # LOAD MODEL + SCALER
 # ===============================
+
 @st.cache_resource
 def load_model():
     model = load("rf_model.joblib")
@@ -40,10 +41,11 @@ def load_model():
 
 rf_model, scaler = load_model()
 
+# ===============================
+# PREPROCESS (IMPORTANT)
+# ===============================
 
-# ===============================
-# PREPROCESSING (MATCH TRAINING)
-# ===============================
+# Remove unnecessary columns
 if "student_id" in df.columns:
     df = df.drop("student_id", axis=1)
 
@@ -53,15 +55,18 @@ if "overall_score" in df.columns:
 target_column = "final_grade"
 
 X = df.drop(target_column, axis=1)
+y = df[target_column]
 
-# Convert categorical → numeric
+# Create dummy columns (IMPORTANT)
 X = pd.get_dummies(X)
-feature_columns = X.columns
 
+# Save training feature structure
+feature_columns = X.columns
 
 # ===============================
 # SIDEBAR
 # ===============================
+
 st.sidebar.title("📊 Navigation")
 
 page = st.sidebar.radio(
@@ -74,104 +79,99 @@ page = st.sidebar.radio(
     ]
 )
 
+# ===============================
+# PAGE 1
+# ===============================
 
-# ===============================
-# PAGE 1 — OVERVIEW
-# ===============================
 if page == "Project Overview":
 
-    st.title("🎓 Student Performance Analytics")
+    st.title("🎓 Student Performance Analytics System")
 
     st.write("""
-This app predicts student final grades using Machine Learning.
-
-Best Model: Random Forest
+This project predicts student final grades using machine learning.
 """)
 
     col1, col2, col3 = st.columns(3)
 
-    col1.metric("Students", len(df))
-    col2.metric("Features", 16)
-    col3.metric("Models", 3)
-
+    col1.metric("Total Students", len(df))
+    col2.metric("Total Columns", df.shape[1])
+    col3.metric("Models Used", 3)
 
 # ===============================
-# PAGE 2 — DATA
+# PAGE 2
 # ===============================
+
 elif page == "Dataset Exploration":
 
-    st.title("📊 Dataset")
+    st.title("📊 Dataset Exploration")
 
     st.dataframe(df.head())
-
-    st.subheader("Statistics")
     st.write(df.describe())
 
-    st.subheader("Grade Distribution")
-    st.bar_chart(df["final_grade"].value_counts())
-
-
 # ===============================
-# PAGE 3 — MODELS
+# PAGE 3
 # ===============================
+
 elif page == "Machine Learning Models":
 
-    st.title("🤖 Model Results")
+    st.title("🤖 Model Performance")
 
-    st.write("""
-Logistic Regression: 0.76  
-Decision Tree: 0.86  
-Random Forest: 0.90 ✅
+    st.code("""
+Logistic Regression: 0.76
+Decision Tree: 0.86
+Random Forest: 0.90
 """)
 
-    st.success("Random Forest is best")
-
-    chart = pd.DataFrame({
-        "Model": ["LR", "DT", "RF"],
-        "Accuracy": [0.76, 0.86, 0.90]
-    })
-
-    st.bar_chart(chart.set_index("Model"))
-
+    st.success("Random Forest is best.")
 
 # ===============================
-# PAGE 4 — PREDICTION
+# PAGE 4 (FIXED)
 # ===============================
+
 elif page == "Prediction System":
 
-    st.title("🎯 Predict Grade")
+    st.title("🎯 Predict Student Final Grade")
 
     input_data = {}
 
-    for col in df.columns:
+    for col in X.columns:
 
-        if col == target_column:
+        # Skip dummy columns (we will rebuild them)
+        original_col = col.split("_")[0]
+
+        if original_col not in df.columns or original_col == target_column:
             continue
 
-        if df[col].dtype == "object":
-            input_data[col] = st.selectbox(col, df[col].unique())
+        if df[original_col].dtype == "object":
+
+            input_data[original_col] = st.selectbox(
+                original_col,
+                df[original_col].unique()
+            )
+
         else:
-            input_data[col] = st.slider(
-                col,
-                float(df[col].min()),
-                float(df[col].max()),
-                float(df[col].mean())
+
+            input_data[original_col] = st.slider(
+                original_col,
+                float(df[original_col].min()),
+                float(df[original_col].max()),
+                float(df[original_col].mean())
             )
 
     if st.button("Predict"):
 
         input_df = pd.DataFrame([input_data])
 
-        # Same encoding as training
+        # APPLY DUMMIES (CRITICAL)
         input_df = pd.get_dummies(input_df)
 
-        # Match columns
+        # MATCH TRAINING COLUMNS (THIS FIXES ERROR)
         input_df = input_df.reindex(columns=feature_columns, fill_value=0)
 
-        # Scale
+        # SCALE
         input_scaled = scaler.transform(input_df)
 
-        # Predict
+        # PREDICT
         prediction = rf_model.predict(input_scaled)[0]
 
         st.success(f"Predicted Grade: {prediction}")
