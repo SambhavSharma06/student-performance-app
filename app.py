@@ -1,26 +1,23 @@
-# ===============================
+# ==============================
 # IMPORT LIBRARIES
-# ===============================
-
+# ==============================
 import streamlit as st
 import pandas as pd
 import numpy as np
 from joblib import load
 
-# ===============================
+# ==============================
 # PAGE SETTINGS
-# ===============================
-
+# ==============================
 st.set_page_config(
     page_title="Student Performance Analytics",
     page_icon="🎓",
     layout="wide"
 )
 
-# ===============================
+# ==============================
 # LOAD DATA
-# ===============================
-
+# ==============================
 @st.cache_data
 def load_data():
     df = pd.read_csv("The_Real_Student_Performance.csv")
@@ -29,23 +26,21 @@ def load_data():
 
 df = load_data()
 
-# ===============================
-# LOAD MODEL + SCALER
-# ===============================
-
+# ==============================
+# LOAD MODEL + SCALER + COLUMNS
+# ==============================
 @st.cache_resource
 def load_model():
     model = load("rf_model.joblib")
     scaler = load("scaler.joblib")
-    return model, scaler
+    columns = load("columns.joblib")   # ⭐ VERY IMPORTANT
+    return model, scaler, columns
 
-rf_model, scaler = load_model()
+rf_model, scaler, feature_columns = load_model()
 
-# ===============================
-# PREPROCESSING
-# ===============================
-
-# Drop unnecessary columns
+# ==============================
+# CLEAN DATA
+# ==============================
 if "student_id" in df.columns:
     df = df.drop("student_id", axis=1)
 
@@ -54,19 +49,9 @@ if "overall_score" in df.columns:
 
 target_column = "final_grade"
 
-X = df.drop(target_column, axis=1)
-y = df[target_column]
-
-# Create dummy variables (same as training)
-X = pd.get_dummies(X)
-
-# Save feature structure
-feature_columns = X.columns
-
-# ===============================
-# SIDEBAR NAVIGATION
-# ===============================
-
+# ==============================
+# SIDEBAR
+# ==============================
 st.sidebar.title("📊 Navigation")
 
 page = st.sidebar.radio(
@@ -74,33 +59,32 @@ page = st.sidebar.radio(
     [
         "Project Overview",
         "Dataset Exploration",
-        "Machine Learning Models",
         "Prediction System"
     ]
 )
 
-# ===============================
-# PAGE 1 — OVERVIEW
-# ===============================
-
+# ==============================
+# PAGE 1
+# ==============================
 if page == "Project Overview":
 
     st.title("🎓 Student Performance Analytics System")
 
     st.write("""
 This project predicts student final grades using machine learning.
+
+It considers factors like study hours, attendance, and background.
 """)
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
 
     col1.metric("Total Students", len(df))
-    col2.metric("Total Columns", df.shape[1])
-    col3.metric("Models Used", 3)
+    col2.metric("Total Features", len(df.columns))
 
-# ===============================
-# PAGE 2 — DATASET
-# ===============================
 
+# ==============================
+# PAGE 2
+# ==============================
 elif page == "Dataset Exploration":
 
     st.title("📊 Dataset Exploration")
@@ -108,74 +92,67 @@ elif page == "Dataset Exploration":
     st.dataframe(df.head())
     st.write(df.describe())
 
-# ===============================
-# PAGE 3 — MODELS
-# ===============================
+    st.subheader("Final Grade Distribution")
+    st.bar_chart(df["final_grade"].value_counts())
 
-elif page == "Machine Learning Models":
 
-    st.title("🤖 Model Performance")
-
-    st.code("""
-Logistic Regression: 0.76
-Decision Tree: 0.86
-Random Forest: 0.90
-""")
-
-    st.success("Random Forest performed best.")
-
-# ===============================
-# PAGE 4 — PREDICTION (FIXED)
-# ===============================
-
+# ==============================
+# PAGE 3 — PREDICTION
+# ==============================
 elif page == "Prediction System":
 
     st.title("🎯 Predict Student Final Grade")
 
     input_data = {}
 
-    # 🔥 Use ORIGINAL columns (NOT dummy columns)
-    for col in df.columns:
+    for i, col in enumerate(df.columns):
 
         if col == target_column:
             continue
 
+        # UNIQUE KEY FIX (prevents duplicate error)
+        unique_key = f"{col}_{i}"
+
         if df[col].dtype == "object":
 
             input_data[col] = st.selectbox(
-                col,
+                col.replace("_", " ").title(),
                 df[col].unique(),
-                key=col   # 🔥 prevents duplicate error
+                key=unique_key
             )
 
         else:
 
             input_data[col] = st.slider(
-                col,
+                col.replace("_", " ").title(),
                 float(df[col].min()),
                 float(df[col].max()),
                 float(df[col].mean()),
-                key=col   # 🔥 prevents duplicate error
+                key=unique_key
             )
 
-    # ===============================
+    # ==========================
     # PREDICT BUTTON
-    # ===============================
-
+    # ==========================
     if st.button("Predict Grade"):
 
-        input_df = pd.DataFrame([input_data])
+        try:
+            # Convert to DataFrame
+            input_df = pd.DataFrame([input_data])
 
-        # Apply same dummy encoding
-        input_df = pd.get_dummies(input_df)
+            # Convert categorical
+            input_df = pd.get_dummies(input_df)
 
-        # 🔥 Match training columns exactly
-        input_df = input_df.reindex(columns=feature_columns, fill_value=0)
+            # ⭐ MATCH TRAINING COLUMNS EXACTLY
+            input_df = input_df.reindex(columns=feature_columns, fill_value=0)
 
-        # Scale input
-        input_scaled = scaler.transform(input_df)
+            # Scale
+            input_scaled = scaler.transform(input_df)
 
-        # Predict
-        prediction = rf_model.predict(input_scaled)[0]
+            # Predict
+            prediction = rf_model.predict(input_scaled)[0]
 
-        st.success(f"Predicted Final Grade: {prediction}")
+            st.success(f"🎯 Predicted Final Grade: {prediction}")
+
+        except Exception as e:
+            st.error(f"Error: {e}")
