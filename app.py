@@ -92,7 +92,7 @@ Best Model: Random Forest
 
     col1.metric("Students", len(df))
     col2.metric("Features", 16)
-    col3.metric("Model", 3)
+    col3.metric("Models", 3)
 
 
 # ===============================
