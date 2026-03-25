@@ -1,22 +1,25 @@
+# ===============================
 # IMPORT LIBRARIES
-
+# ===============================
 import streamlit as st
 import pandas as pd
 import numpy as np
-import pickle   # ✅ NEW (to load model)
+import pickle
 
-# ❌ REMOVED sklearn training imports (not needed now)
 
+# ===============================
 # PAGE SETTINGS
-
+# ===============================
 st.set_page_config(
     page_title="Student Performance Analytics",
     page_icon="🎓",
     layout="wide"
 )
 
-# LOAD DATA
 
+# ===============================
+# LOAD DATA
+# ===============================
 @st.cache_data
 def load_data():
     df = pd.read_csv("The_Real_Student_Performance.csv")
@@ -25,33 +28,45 @@ def load_data():
 
 df = load_data()
 
-# REMOVE USELESS COLUMNS
 
+# ===============================
+# LOAD MODEL + SCALER (IMPORTANT)
+# ===============================
+@st.cache_resource
+def load_model():
+    with open("rf_model.pkl", "rb") as f:
+        model = pickle.load(f)
+
+    with open("scaler.pkl", "rb") as f:
+        scaler = pickle.load(f)
+
+    return model, scaler
+
+rf_model, scaler = load_model()
+
+
+# ===============================
+# PREPROCESSING (SAME AS TRAINING)
+# ===============================
 if "student_id" in df.columns:
     df = df.drop("student_id", axis=1)
 
 if "overall_score" in df.columns:
     df = df.drop("overall_score", axis=1)
 
-# TARGET VARIABLE
-
 target_column = "final_grade"
 
-# PREPARE STRUCTURE (NO TRAINING)
-
 X = df.drop(target_column, axis=1)
+y = df[target_column]
+
+# Dummy encoding
 X = pd.get_dummies(X)
 feature_columns = X.columns
 
-# --------------------------------------------------
-# ✅ LOAD TRAINED MODEL + SCALER (IMPORTANT CHANGE)
-# --------------------------------------------------
 
-model = pickle.load(open("rf_model (3).pkl", "rb"))
-scaler = pickle.load(open("scaler (3).pkl", "rb"))
-
+# ===============================
 # SIDEBAR NAVIGATION
-
+# ===============================
 st.sidebar.title("📊 Navigation")
 
 page = st.sidebar.radio(
@@ -64,29 +79,35 @@ page = st.sidebar.radio(
     ]
 )
 
-# PAGE 1 — PROJECT OVERVIEW
 
+# ===============================
+# PAGE 1 — OVERVIEW
+# ===============================
 if page == "Project Overview":
 
     st.title("🎓 Student Performance Analytics System")
 
     st.write("""
-This project uses machine learning to predict student final grades.
+This project predicts student final grades using Machine Learning.
 
-Different factors like study hours, attendance, and background
-are used to understand student performance.
+It analyzes:
+- Study habits
+- Attendance
+- Academic scores
 
-The model was trained in Google Colab and loaded here for prediction.
+Best Model: Random Forest 🌲
 """)
 
     col1, col2, col3 = st.columns(3)
 
     col1.metric("Total Students", len(df))
-    col2.metric("Total Columns", 16)
-    col3.metric("Model Used", "Random Forest")
+    col2.metric("Total Features", len(df.columns))
+    col3.metric("Models Used", 3)
 
+
+# ===============================
 # PAGE 2 — DATA EXPLORATION
-
+# ===============================
 elif page == "Dataset Exploration":
 
     st.title("📊 Dataset Exploration")
@@ -97,40 +118,39 @@ elif page == "Dataset Exploration":
     st.subheader("Statistical Summary")
     st.write(df.describe())
 
-    st.subheader("Distribution of Final Grades")
-    grade_counts = df["final_grade"].value_counts()
-    st.bar_chart(grade_counts)
+    st.subheader("Final Grade Distribution")
+    st.bar_chart(df["final_grade"].value_counts())
 
-# PAGE 3 — MODEL COMPARISON
 
+# ===============================
+# PAGE 3 — MODEL INFO
+# ===============================
 elif page == "Machine Learning Models":
 
-    st.title("🤖 Machine Learning Model Comparison")
+    st.title("🤖 Model Comparison")
 
-    st.subheader("Accuracy Score (All Models)")
-
-    st.code("""
-Logistic Regression Accuracy: 0.7632
-Decision Tree Accuracy: 0.8600
-Random Forest Accuracy: 0.9024
+    st.write("""
+Logistic Regression Accuracy: 0.76  
+Decision Tree Accuracy: 0.86  
+Random Forest Accuracy: 0.90 ✅
 """)
 
-    st.success("Random Forest performed the best.")
+    st.success("Random Forest is the best model")
 
-    model_data = pd.DataFrame({
+    chart_data = pd.DataFrame({
         "Model": ["Logistic Regression", "Decision Tree", "Random Forest"],
-        "Accuracy": [0.7632, 0.86, 0.9024]
+        "Accuracy": [0.76, 0.86, 0.90]
     })
 
-    st.bar_chart(model_data.set_index("Model"))
+    st.bar_chart(chart_data.set_index("Model"))
 
+
+# ===============================
 # PAGE 4 — PREDICTION SYSTEM
-
+# ===============================
 elif page == "Prediction System":
 
     st.title("🎯 Predict Student Final Grade")
-
-    st.write("Enter student details below:")
 
     input_data = {}
 
@@ -155,22 +175,21 @@ elif page == "Prediction System":
                 float(df[col].mean())
             )
 
+
     if st.button("Predict Grade"):
 
         input_df = pd.DataFrame([input_data])
 
+        # Dummy encoding
         input_df = pd.get_dummies(input_df)
 
         # Match training columns
-        input_df = input_df.reindex(
-            columns=feature_columns,
-            fill_value=0
-        )
+        input_df = input_df.reindex(columns=feature_columns, fill_value=0)
 
         # Scale input
         input_scaled = scaler.transform(input_df)
 
-        # Predict using LOADED model
-        prediction = model.predict(input_scaled)[0]
+        # Predict
+        prediction = rf_model.predict(input_scaled)[0]
 
-        st.success(f"Predicted Final Grade: {prediction}")
+        st.success(f"🎉 Predicted Final Grade: {prediction}")
