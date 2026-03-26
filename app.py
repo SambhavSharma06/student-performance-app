@@ -33,7 +33,7 @@ df = load_data()
 def load_model():
     model = load("rf_model.joblib")
     scaler = load("scaler.joblib")
-    columns = load("columns.joblib")   # ⭐ VERY IMPORTANT
+    columns = load("columns.joblib")
     return model, scaler, columns
 
 rf_model, scaler, feature_columns = load_model()
@@ -59,12 +59,13 @@ page = st.sidebar.radio(
     [
         "Project Overview",
         "Dataset Exploration",
+        "Machine Learning Models",   # ⭐ NEW PAGE
         "Prediction System"
     ]
 )
 
 # ==============================
-# PAGE 1
+# PAGE 1 — OVERVIEW
 # ==============================
 if page == "Project Overview":
 
@@ -76,14 +77,14 @@ This project predicts student final grades using machine learning.
 It considers factors like study hours, attendance, and background.
 """)
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
     col1.metric("Total Students", len(df))
-    col2.metric("Total Features", len(df.columns))
-
+    col2.metric("Total Columns", 16)   # ⭐ FIXED
+    col3.metric("Models Used", 3)      # ⭐ NEW
 
 # ==============================
-# PAGE 2
+# PAGE 2 — DATA
 # ==============================
 elif page == "Dataset Exploration":
 
@@ -95,9 +96,41 @@ elif page == "Dataset Exploration":
     st.subheader("Final Grade Distribution")
     st.bar_chart(df["final_grade"].value_counts())
 
+# ==============================
+# PAGE 3 — ML MODELS ⭐ NEW
+# ==============================
+elif page == "Machine Learning Models":
+
+    st.title("🤖 Machine Learning Models Used")
+
+    st.write("""
+This project compares three machine learning models to predict student performance.
+""")
+
+    # Model descriptions
+    st.subheader("📌 Models Used")
+
+    st.write("""
+1. Logistic Regression – Simple baseline model  
+2. Decision Tree – Captures non-linear patterns  
+3. Random Forest – Ensemble model (Best Performance)
+""")
+
+    # Accuracy display
+    st.subheader("📊 Model Performance")
+
+    model_data = pd.DataFrame({
+        "Model": ["Logistic Regression", "Decision Tree", "Random Forest"],
+        "Accuracy": [0.76, 0.86, 0.90]   # your values
+    })
+
+    st.bar_chart(model_data.set_index("Model"))
+
+    # Highlight best model
+    st.success("🏆 Best Model: Random Forest (Highest Accuracy)")
 
 # ==============================
-# PAGE 3 — PREDICTION
+# PAGE 4 — PREDICTION
 # ==============================
 elif page == "Prediction System":
 
@@ -110,7 +143,6 @@ elif page == "Prediction System":
         if col == target_column:
             continue
 
-        # UNIQUE KEY FIX (prevents duplicate error)
         unique_key = f"{col}_{i}"
 
         if df[col].dtype == "object":
@@ -132,18 +164,15 @@ elif page == "Prediction System":
             )
 
     # ==========================
-    # PREDICT BUTTON
+    # PREDICTION
     # ==========================
     if st.button("Predict Grade"):
 
         try:
-            # Convert to DataFrame
             input_df = pd.DataFrame([input_data])
-
-            # Convert categorical
             input_df = pd.get_dummies(input_df)
 
-            # ⭐ MATCH TRAINING COLUMNS EXACTLY
+            # Match columns
             input_df = input_df.reindex(columns=feature_columns, fill_value=0)
 
             # Scale
