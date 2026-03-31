@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 from joblib import load
 
-
 st.set_page_config(
     page_title="Student Performance Analytics",
     page_icon="🎓",
