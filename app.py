@@ -1,28 +1,17 @@
-# ==============================
 # IMPORT LIBRARIES
-# ==============================
-
 import streamlit as st              # Used to build the web app
 import pandas as pd                 # Used to handle dataset (tables)
 import numpy as np                  # Used for numerical operations
 from joblib import load             # Used to load saved model files
 
-
-# ==============================
 # PAGE SETTINGS
-# ==============================
-
 st.set_page_config(
     page_title="Student Performance Analytics",   # Title in browser tab
     page_icon="🎓",                               # Icon in browser tab
     layout="wide"                                 # Full-width layout
 )
 
-
-# ==============================
 # LOAD DATASET
-# ==============================
-
 @st.cache_data                               # Cache data → faster loading
 def load_data():
     df = pd.read_csv("The_Real_Student_Performance.csv")   # Load CSV file
@@ -32,12 +21,8 @@ def load_data():
 
 df = load_data()                                          # Call function
 
-
-# ==============================
 # LOAD MODEL + SCALER + COLUMNS
-# ==============================
-
-@st.cache_resource                           # Cache model (loads once only)
+@st.cache_resource                           # Cache model
 def load_model():
     model = load("rf_model.joblib")          # Load trained Random Forest model
     scaler = load("scaler.joblib")           # Load scaler used during training
@@ -46,11 +31,7 @@ def load_model():
 
 rf_model, scaler, feature_columns = load_model()   # Get all components
 
-
-# ==============================
 # CLEAN DATA
-# ==============================
-
 # Remove useless columns if they exist
 if "student_id" in df.columns:
     df = df.drop("student_id", axis=1)
@@ -60,11 +41,7 @@ if "overall_score" in df.columns:
 
 target_column = "final_grade"   # This is what we want to predict
 
-
-# ==============================
 # SIDEBAR NAVIGATION
-# ==============================
-
 st.sidebar.title("📊 Navigation")   # Sidebar title
 
 page = st.sidebar.radio(
@@ -77,11 +54,7 @@ page = st.sidebar.radio(
     ]
 )
 
-
-# ==============================
 # PAGE 1 — PROJECT OVERVIEW
-# ==============================
-
 if page == "Project Overview":
 
     st.title("🎓 Student Performance Analytics System")
@@ -99,11 +72,7 @@ It analyzes factors like study hours, attendance, and background.
     col2.metric("Total Columns", 16)         # Fixed number of features
     col3.metric("Models Used", 3)            # Total ML models used
 
-
-# ==============================
 # PAGE 2 — DATASET EXPLORATION
-# ==============================
-
 elif page == "Dataset Exploration":
 
     st.title("📊 Dataset Exploration")
@@ -117,11 +86,7 @@ elif page == "Dataset Exploration":
     st.subheader("Final Grade Distribution")
     st.bar_chart(df["final_grade"].value_counts())   # Show grade distribution
 
-
-# ==============================
 # PAGE 3 — MACHINE LEARNING MODELS
-# ==============================
-
 elif page == "Machine Learning Models":
 
     st.title("🤖 Machine Learning Models")
@@ -150,9 +115,7 @@ This project compares three machine learning models:
     st.success("🏆 Best Model: Random Forest")
 
 
-# ==============================
 # PAGE 4 — PREDICTION SYSTEM
-# ==============================
 
 elif page == "Prediction System":
 
@@ -186,12 +149,7 @@ elif page == "Prediction System":
                 df[col].astype(str).unique(),
                 key=unique_key
             )
-
-
-    # ==========================
     # PREDICT BUTTON
-    # ==========================
-
     if st.button("Predict Grade"):
 
         try:
