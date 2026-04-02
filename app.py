@@ -1,6 +1,6 @@
 # IMPORT LIBRARIES
 import streamlit as st              # Used to build the web app
-import pandas as pd                 # Used to handle dataset (tables)
+import pandas as pd                 # Used to handle dataset
 import numpy as np                  # Used for numerical operations
 from joblib import load             # Used to load saved model files
 
@@ -16,7 +16,7 @@ st.set_page_config(
 def load_data():
     df = pd.read_csv("The_Real_Student_Performance.csv")   # Load CSV file
     df.columns = df.columns.str.strip()                   # Remove extra spaces in column names
-    df = df.dropna()                                     # Remove missing values (important)
+    df = df.dropna()                                     # Remove missing values
     return df
 
 df = load_data()                                          # Call function
